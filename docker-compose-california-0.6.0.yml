@@ -99,7 +99,7 @@ services:
       - consul
 
   vault-worker:
-    image: edgexfoundry/docker-edgex-vault-worker:latest
+    image: edgexfoundry/docker-edgex-vault-worker-go:latest
     container_name: edgex-vault-worker
     hostname: edgex-vault-worker
     command: ["--init=true", "--wait=30", "--insureskipverify=false"]

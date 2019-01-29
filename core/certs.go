@@ -41,6 +41,8 @@ type CertInfo struct {
 	Snis []string `json:"snis,omitempty"`
 }
 
+//TODO maybe secure all of these certs? or wherever we read them in
+
 func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http.Client) error {
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c)
 	if err != nil {

@@ -58,6 +58,11 @@ func main() {
 		},
 	}
 	if *insecureSkipVerify == false {
+		// TODO add TPM
+		// check tpm if it is in the correct TPM device (unseal) ??
+		// get from ReadFile
+		// decrypt with TMP
+
 		caCert, err := ioutil.ReadFile(config.SecretService.CAFilePath)
 		if err != nil {
 			lc.Error("Failed to load rootCA cert.")
@@ -81,6 +86,8 @@ func main() {
 		Address:    secretServiceBaseURL,
 		HttpClient: client,
 	})
+
+	//TODO research 's' ?? maybe vault api doc to find out
 	s := a.Sys()
 	inited := false
 	sealed := true
@@ -90,6 +97,8 @@ func main() {
 		if err != nil {
 			lc.Error(fmt.Sprintf("Error while checking the initialization status: %s", err.Error()))
 		} else {
+
+			// TODO secure this as well (master key)
 			k, err := initVault(s, config.SecretService.TokenPath, inited)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Error while initializing the vault with info: %s", err.Error()))
@@ -200,6 +209,7 @@ func main() {
 	}
 	lc.Info("Cert&key are not in the secret store yet, will need to upload them.")
 
+	// TODO secure this ..
 	cert, sk, err := loadCertKeyPair(config.SecretService.CertFilePath, config.SecretService.KeyFilePath)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Failed to load cert&key pair from volume with path of cert - %s, key - %s.", config.SecretService.CertFilePath, config.SecretService.KeyFilePath))

@@ -204,6 +204,7 @@ func createToken(tokenName string, policyName string, rootToken string, config *
 	}
 
 	// Save created token data to a JSON file
+	//TODO: look into this more, maybe need to secure WriteFile?
 	err = ioutil.WriteFile(config.SecretService.TokenFolderPath+"/"+tokenName+tokenFileSuffix, body, 0644)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Fatal Error Writing %s Token in Vault, HTTP Status: %s", tokenName, resp.Status))

@@ -23,10 +23,12 @@ import (
 )
 
 type Secret struct {
-	Token string `json:"root_token"`
+	Token string `json:"root_token"` // TODO Weird naming this should be called 'token' not root token
 }
 
 func getSecret(filename string) (Secret, error) {
+	// TODO secure this also
+
 	s := Secret{}
 	raw, err := ioutil.ReadFile(filename)
 	if err != nil {

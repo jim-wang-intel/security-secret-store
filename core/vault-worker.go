@@ -51,6 +51,7 @@ func initVault(c *api.Sys, path string, inited bool) (string, error) {
 	return s.Token, nil
 }
 
+// TODO token should be called master key..
 func unsealVault(c *api.Sys, token string) (bool, error) {
 	if len(token) == 0 {
 		return true, errors.New("error:empty token")
@@ -96,6 +97,7 @@ func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk 
 		Key:  sk,
 	}
 
+	// TODO (just a note--thinking this is Kong Cert)
 	t, err := getSecret(config.SecretService.TokenPath)
 	if err != nil {
 		lc.Error(err.Error())
