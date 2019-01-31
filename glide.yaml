@@ -9,7 +9,7 @@ import:
 - package: github.com/hashicorp/vault/api
   version: v0.11.3
 - package: github.com/google/go-tpm
-  version: v0.1.0
+  version: master
 - package: github.com/edgexfoundry/edgex-go
   version: master
   subpackages:
