@@ -113,14 +113,14 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		}
 
 		if writeHndlErr := writeParentHandle(parentHandleFileName, srkHandle); writeHndlErr != nil {
-			fmt.Printf("error: %v", writeHndlErr)
+			fmt.Printf("error: %v\n", writeHndlErr)
 		} else {
 			fmt.Println("parent handle file successfully saved")
 		}
 
 		parentHandle = srkHandle
 	} else {
-		fmt.Printf("error on os stat parent handle: %v", err)
+		fmt.Printf("error on os stat parent handle: %v\n", err)
 	}
 
 	// read PCR for binding with policy in the session
@@ -129,9 +129,9 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 	pcr := 0
 	pcrVal, pcrErr := tpm2.ReadPCR(rw, pcr, tpm2.AlgSHA256)
 	if pcrErr != nil {
-		fmt.Printf("unable to read PCR: %v", pcrErr)
+		fmt.Printf("unable to read PCR: %v\n", pcrErr)
 	}
-	fmt.Printf("PCR %v value: 0x%x", pcr, pcrVal)
+	fmt.Printf("PCR %v value: 0x%x\n", pcr, pcrVal)
 
 	sessionHandle, _, sessionErr := tpm2.StartAuthSession(
 		rw,
@@ -143,20 +143,10 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		tpm2.AlgNull,
 		tpm2.AlgSHA256)
 
-	// this can be ported into another command util to find out what is the session handle from TPM:
-	// if psl, _, capErr := tpm2.GetCapability(rw, tpm2.CapabilityHandles, 1, uint32(tpm2.HandleTypeLoadedSession)<<24); capErr != nil {
-	// 	fmt.Printf("unable to get capability: %v", capErr)
-	// 	return capErr
-	// } else {
-	// 	for _, capVal := range psl {
-	// 		fmt.Printf("capability type: %v  capability val: 0x%x", reflect.TypeOf(capVal), capVal)
-	// 	}
-	// }
-
 	if sessionErr != nil {
-		fmt.Printf("unable to start session: %v", sessionErr)
+		fmt.Printf("unable to start session: %v\n", sessionErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v", flushErr)
+			fmt.Printf("%v\n", flushErr)
 		}
 		return sessionErr
 	}
@@ -165,30 +155,30 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		PCRs: []int{pcr},
 	}
 	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
-		fmt.Printf("unable to bind PCRs to auth policy: %v", policyPCRErr)
+		fmt.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v", flushErr)
+			fmt.Printf("%v\n", flushErr)
 		}
 		return policyPCRErr
 	}
 	if policyPwdErr := tpm2.PolicyPassword(rw, sessionHandle); policyPwdErr != nil {
-		fmt.Printf("unable to require password for auth policy: %v", policyPwdErr)
+		fmt.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v", flushErr)
+			fmt.Printf("%v\n", flushErr)
 		}
 		return policyPwdErr
 	}
 	policy, digestErr := tpm2.PolicyGetDigest(rw, sessionHandle)
 	if digestErr != nil {
-		fmt.Printf("unable to get policy digest: %v", digestErr)
+		fmt.Printf("unable to get policy digest: %v\n", digestErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v", flushErr)
+			fmt.Printf("%v\n", flushErr)
 		}
 		return digestErr
 	}
 
 	if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-		fmt.Printf("%v", flushErr)
+		fmt.Printf("%v\n", flushErr)
 		return flushErr
 	}
 
@@ -211,7 +201,7 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 // FlushSessionHandle removes the session context from TPM device with a given session handle
 func FlushSessionHandle(rw io.ReadWriter, sessionHandle tpmutil.Handle) error {
 	if sessionHandle != tpm2.HandleNull {
-		fmt.Printf("flushing sessionHandle: 0x%x", sessionHandle)
+		fmt.Printf("flushing sessionHandle: 0x%x\n", sessionHandle)
 		if flushErr := tpm2.FlushContext(rw, sessionHandle); flushErr != nil {
 			return fmt.Errorf("unable to flush session: %v", flushErr)
 		}
@@ -224,14 +214,14 @@ func RetrieveParentHandle(handleFile string) (parentHandle tpmutil.Handle) {
 	handleBytes, readErr := ioutil.ReadFile(handleFile)
 	if readErr != nil {
 		// file reading error; skip
-		fmt.Printf("unable to read parent handle file [%s]: %v", handleFile, readErr)
+		fmt.Printf("unable to read parent handle file [%s]: %v\n", handleFile, readErr)
 		return tpm2.HandleNull
 	}
 
 	handleStr := string(handleBytes)
 	// base 0 means infer the base from the string
 	if handleVal, convertErr := strconv.ParseUint(handleStr, 0, 32); convertErr != nil {
-		fmt.Printf("unable to convert handle string %s, file [%s] may be corrupted: %v", handleStr, handleFile, convertErr)
+		fmt.Printf("unable to convert handle string %s, file [%s] may be corrupted: %v\n", handleStr, handleFile, convertErr)
 		parentHandle = tpm2.HandleNull
 	} else {
 		parentHandle = tpmutil.Handle(uint32(handleVal))
@@ -243,14 +233,14 @@ func RetrieveParentHandle(handleFile string) (parentHandle tpmutil.Handle) {
 // GetTPMParentHandleFileName returns the file name path for parent handle
 func GetTPMParentHandleFileName(outputblobFilePath string) string {
 	baseFolder := filepath.Dir(outputblobFilePath)
-	fmt.Printf("baseFolder %s", baseFolder)
+	fmt.Printf("baseFolder %s\n", baseFolder)
 
 	return filepath.Join(baseFolder, parentHandleFileName)
 }
 
 func writeParentHandle(parentHandleFileName string, parentHandle tpmutil.Handle) error {
 	handleHexVal := fmt.Sprintf("0x%x", parentHandle)
-	fmt.Printf("handleHexVal: %s", handleHexVal)
+	fmt.Printf("handleHexVal: %s\n", handleHexVal)
 	if writeErr := ioutil.WriteFile(parentHandleFileName, []byte(handleHexVal), 0644); writeErr != nil {
 		return fmt.Errorf("cannot write the parent handle value to %s: %v", parentHandleFileName, handleHexVal)
 	}
