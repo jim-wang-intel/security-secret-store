@@ -84,7 +84,6 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 		pcr := 0
 		unsealedBytes, unsealErr := unsealData(rw, objHandle, pcr, objectPwd)
 		if unsealErr != nil {
-			//log.Errorf("unable to unseal data by using objHandle 0x%x: %v", objHandle, unsealErr)
 			return "", unsealErr
 		}
 		unsealedData = string(unsealedBytes[:])
