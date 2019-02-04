@@ -20,7 +20,7 @@
 package util
 
 import (
-	"fmt"
+	"log"
 	"reflect"
 	"testing"
 
@@ -38,9 +38,9 @@ func TestGetSessionList(t *testing.T) {
 	if psl, _, capErr := tpm2.GetCapability(rw, tpm2.CapabilityHandles, 1, uint32(tpm2.HandleTypeLoadedSession)<<24); capErr != nil {
 		t.Fatalf("unable to get capability: %v", capErr)
 	} else {
-		fmt.Printf("psl %v", psl)
+		log.Printf("psl %v", psl)
 		for _, capVal := range psl {
-			fmt.Printf("capability type: %v  capability val: 0x%x", reflect.TypeOf(capVal), capVal)
+			log.Printf("capability type: %v  capability val: 0x%x", reflect.TypeOf(capVal), capVal)
 		}
 	}
 }

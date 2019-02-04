@@ -77,6 +77,52 @@ func TestUnsealWithNoTPM(t *testing.T) {
 	}
 }
 
+func TestUnsealReadDataError(t *testing.T) {
+	testParentPwd := ""
+	secret := "SecretString"
+	sealOutFile := "outfile"
+	tpmPath := "/dev/tpm0"
+	tpmDevice := NewTPMDevice(&tpmPath)
+
+	// seal secret:
+	sealData(t, tpmDevice, secret, sealOutFile)
+	// then unseal with wrong output file name
+	wrongOutFile := "wrongOutfile"
+	unsealInput := UnsealInput{
+		parentKeyPwd:      &testParentPwd,
+		secretKeyFileName: &wrongOutFile,
+	}
+	_, unsealErr := Unseal(tpmDevice, unsealInput)
+	cleanup(t, tpmDevice, sealOutFile)
+
+	if unsealErr == nil {
+		t.Fatal("expecting error on reading sealed data for unseal")
+	}
+}
+
+func TestUnsealReadParentHandleFileError(t *testing.T) {
+	testParentPwd := ""
+	secret := "SecretString"
+	sealOutFile := "outfile"
+	tpmPath := "/dev/tpm0"
+	tpmDevice := NewTPMDevice(&tpmPath)
+
+	// seal secret:
+	sealData(t, tpmDevice, secret, sealOutFile)
+	// then unseal with wrong secret file path
+	wrongOutFile := "/wrong/path/to/secretOutfile"
+	unsealInput := UnsealInput{
+		parentKeyPwd:      &testParentPwd,
+		secretKeyFileName: &wrongOutFile,
+	}
+	_, unsealErr := Unseal(tpmDevice, unsealInput)
+	cleanup(t, tpmDevice, sealOutFile)
+
+	if unsealErr == nil {
+		t.Fatal("expecting error on reading parentHandle file for unseal")
+	}
+}
+
 func sealData(t *testing.T, tpmDevice *TPMDevice, secret string, secretKeyFileName string) {
 	sealInput := SealInput{outputblobFile: &secretKeyFileName, secretSourceData: &secret}
 

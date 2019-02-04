@@ -21,7 +21,7 @@ package util
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"os"
 	"path"
 
@@ -46,20 +46,20 @@ func FlushContext(tpmDev *TPMDevice, handle *uint32) error {
 		return flushErr
 	}
 
-	fmt.Printf("TPM handle 0x%x has flushed successfully\n", tpmHandle) // info
+	log.Printf("TPM handle 0x%x has flushed successfully\n", tpmHandle) // info
 
 	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("unable to get working directory for parent handle %s: %v\n", parentHandleFileName, err) // warning
+		log.Printf("unable to get working directory for parent handle %s: %v\n", parentHandleFileName, err) // warning
 	}
 	parentHandleFilePath := path.Join(dir, parentHandleFileName)
 
 	if _, statErr := os.Stat(parentHandleFileName); statErr == nil {
 		if delErr := os.Remove(parentHandleFilePath); delErr != nil {
-			fmt.Printf("unable to delete parent handle file %s: %v\n", parentHandleFilePath, delErr) // warning
+			log.Printf("unable to delete parent handle file %s: %v\n", parentHandleFilePath, delErr) // warning
 		}
 	} else if os.IsNotExist(statErr) {
-		fmt.Printf("parent handle file [%s] does not exist\n", parentHandleFilePath) // info
+		log.Printf("parent handle file [%s] does not exist\n", parentHandleFilePath) // info
 	}
 	return nil
 }

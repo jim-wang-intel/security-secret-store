@@ -44,7 +44,7 @@ type UnsealInput struct {
 
 // Unseal executes the Unseal subcommands
 func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, unsealErr error) {
-	fmt.Printf("secretKeyFileName: %s\n", *unsealInput.secretKeyFileName)
+	log.Printf("secretKeyFileName: %s\n", *unsealInput.secretKeyFileName)
 
 	secretKeyFilename := strings.TrimSpace(*unsealInput.secretKeyFileName)
 
@@ -61,24 +61,23 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 	// read the parent handle from file if any
 	parentHdl := readParentHandle(secretKeyFilename)
 
-	fmt.Printf("Loading an object into TPM device with parent handle 0x%x and key file name %s\n", parentHdl, secretKeyFilename)
+	log.Printf("Loading an object into TPM device with parent handle 0x%x and key file name %s\n", parentHdl, secretKeyFilename)
 
 	if sealPrivate, sealPublic, readErr := readSealedData(secretKeyFilename); readErr != nil {
 		return "", readErr
 	} else {
 		objHandle, _, loadErr := tpm2.Load(rw, parentHdl, *unsealInput.parentKeyPwd, sealPublic, sealPrivate)
 		if loadErr != nil {
-			fmt.Printf("parentHandle 0x%x sealPrivate: %v sealPublic: %v\n", parentHdl, sealPrivate, sealPublic)
-			fmt.Printf("unable to load data into TPM: %v\n", loadErr)
+			log.Printf("parentHandle 0x%x sealPrivate: %v sealPublic: %v\n", parentHdl, sealPrivate, sealPublic)
+			log.Printf("unable to load data into TPM: %v\n", loadErr)
 			return "", loadErr
 		}
 		defer func() {
 			if flushErr := tpm2.FlushContext(rw, objHandle); flushErr != nil {
-				//log.Fatalf("unable to flush object handle 0x%x: %v", objHandle, flushErr)
-				fmt.Printf("unable to flush object handle 0x%x: %v\n", objHandle, flushErr)
+				log.Printf("unable to flush object handle 0x%x: %v\n", objHandle, flushErr)
 			}
 		}()
-		fmt.Printf("Successfully loaded sealed data into TPM with parent handle: 0x%x, and got the object handle: 0x%x\n", parentHdl, objHandle)
+		log.Printf("Successfully loaded sealed data into TPM with parent handle: 0x%x, and got the object handle: 0x%x\n", parentHdl, objHandle)
 
 		objectPwd := "test"
 		pcr := 0
@@ -89,7 +88,7 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 		unsealedData = string(unsealedBytes[:])
 	}
 
-	fmt.Println("Unseal data with TPM device successfully done.")
+	log.Println("Unseal data with TPM device successfully done.")
 	return unsealedData, nil
 }
 
@@ -109,9 +108,9 @@ func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd s
 	}
 	defer func() {
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v\n", flushErr)
+			log.Printf("%v\n", flushErr)
 		}
-		fmt.Printf("sessionHandle 0x%x has been flushed\n", sessionHandle)
+		log.Printf("sessionHandle 0x%x has been flushed\n", sessionHandle)
 	}()
 
 	pcrSelection := tpm2.PCRSelection{
@@ -119,29 +118,29 @@ func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd s
 		PCRs: []int{pcr},
 	}
 	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
-		fmt.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
+		log.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v\n", flushErr)
+			log.Printf("%v\n", flushErr)
 		}
 		return nil, policyPCRErr
 	}
 	if policyPwdErr := tpm2.PolicyPassword(rw, sessionHandle); policyPwdErr != nil {
-		fmt.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
+		log.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v\n", flushErr)
+			log.Printf("%v\n", flushErr)
 		}
 		return nil, policyPwdErr
 	}
 	policy, digestErr := tpm2.PolicyGetDigest(rw, sessionHandle)
 	if digestErr != nil {
-		fmt.Printf("unable to get policy digest: %v\n", digestErr)
+		log.Printf("unable to get policy digest: %v\n", digestErr)
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			fmt.Printf("%v\n", flushErr)
+			log.Printf("%v\n", flushErr)
 		}
 		return nil, digestErr
 	}
 
-	fmt.Printf("Got policy %v\n", policy)
+	log.Printf("Got policy %v\n", policy)
 
 	unsealedData, err := tpm2.UnsealWithSession(rw, sessionHandle, objHandle, objectPwd)
 	if err != nil {
@@ -157,9 +156,9 @@ func readParentHandle(secretKeyFilename string) (parentHandle tpmutil.Handle) {
 		// parent handle already exists, retrieve and reuse it
 		parentHandle = RetrieveParentHandle(parentHandleFileName)
 	} else if os.IsNotExist(err) {
-		log.Fatalf("unable to find the parent handle file %s", parentHandleFileName)
+		log.Printf("unable to find the parent handle file %s", parentHandleFileName)
 	} else {
-		log.Fatalf("error on os stat parent handle: %v", err)
+		log.Printf("error on os stat parent handle: %v", err)
 	}
 	return parentHandle
 }
