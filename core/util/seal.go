@@ -37,50 +37,117 @@ import (
 )
 
 const (
-	emptyPassword        = ""
-	parentHandleFileName = "parentHndl"
+	emptyPassword         = ""
+	parentHandleFileName  = "parentHndl"
+	parentHandleSeparator = ","
+	defaultTemplateType   = "RSA"
+	defaultTemplate       = RSATemplate
 )
+
+// TemplateType is the type of template for EK Public Area
+type TemplateType uint
+
+const (
+	// RSATemplate is the default EK public area template for creating primary key pairs
+	// using RSA algorithm
+	RSATemplate TemplateType = iota // the default template type if not explicitly specified
+	// ECCTemplate is the EK public area template using Elliptic Curve Cryptographic algorithm
+	ECCTemplate
+)
+
+func (template TemplateType) String() string {
+	return [...]string{"RSA Template", "ECC Template"}[template]
+}
 
 // SealInput data passed into seal operation
 type SealInput struct {
-	secretSourceData *string
-	outputblobFile   *string
+	secretSourceData      *string
+	outputblobFile        *string
+	publicKeyTemplateType *string
 }
 
 // String toString method for SealInput
 func (seal *SealInput) String() string {
-	return fmt.Sprintf("Output file name: %s", *seal.outputblobFile)
+	var outFileName, templateType string
+	if seal.outputblobFile != nil {
+		outFileName = *seal.outputblobFile
+	}
+	if seal.publicKeyTemplateType != nil {
+		templateType = *seal.publicKeyTemplateType
+	}
+	return fmt.Sprintf("Output file name: %s, key template type: %s", outFileName, templateType)
 }
 
 // GetSRKTemplate is to create an instance of SRK template to be used in creating primary key
-// from TPM device
-func GetSRKTemplate() *tpm2.Public {
-	return &tpm2.Public{
-		Type:       tpm2.AlgRSA,
-		NameAlg:    tpm2.AlgSHA256,
-		Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagRestricted | tpm2.FlagDecrypt | tpm2.FlagNoDA,
-		AuthPolicy: nil,
-		RSAParameters: &tpm2.RSAParams{
-			Symmetric: &tpm2.SymScheme{
-				Alg:     tpm2.AlgAES,
-				KeyBits: 128,
-				Mode:    tpm2.AlgCFB,
+// from TPM device: the template type can be either RSA or ECC
+func GetSRKTemplate(tempType TemplateType) (srkTemplate *tpm2.Public) {
+	switch tempType {
+	default:
+		fallthrough
+	case RSATemplate:
+		srkTemplate = &tpm2.Public{
+			Type:       tpm2.AlgRSA,
+			NameAlg:    tpm2.AlgSHA256,
+			Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagRestricted | tpm2.FlagDecrypt | tpm2.FlagNoDA,
+			AuthPolicy: nil,
+			RSAParameters: &tpm2.RSAParams{
+				Symmetric: &tpm2.SymScheme{
+					Alg:     tpm2.AlgAES,
+					KeyBits: 128,
+					Mode:    tpm2.AlgCFB,
+				},
+				KeyBits:    2048,
+				Exponent:   0,
+				ModulusRaw: make([]byte, 256),
 			},
-			KeyBits:    2048,
-			Exponent:   0,
-			ModulusRaw: make([]byte, 256),
-		},
+		}
+	case ECCTemplate:
+		srkTemplate = &tpm2.Public{
+			Type:       tpm2.AlgECC,
+			NameAlg:    tpm2.AlgSHA256,
+			Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagRestricted | tpm2.FlagDecrypt | tpm2.FlagNoDA,
+			AuthPolicy: nil,
+			ECCParameters: &tpm2.ECCParams{
+				Symmetric: &tpm2.SymScheme{
+					Alg:     tpm2.AlgAES,
+					KeyBits: 128,
+					Mode:    tpm2.AlgCFB,
+				},
+				CurveID: tpm2.CurveNISTP256,
+				KDF:     &tpm2.KDFScheme{},
+			},
+		}
 	}
+	return srkTemplate
 }
 
 // Seal executes the Seal subcommands
 func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
+	// nil pointer check:
+	if sealInput.secretSourceData == nil {
+		return errors.New("empty secret not allow")
+	}
+	if sealInput.outputblobFile == nil {
+		return errors.New("output file path cannot be empty")
+	}
+
+	// default to RSA if nil or empty
+	var templateTypeStr string
+	if sealInput.publicKeyTemplateType == nil {
+		templateTypeStr = defaultTemplateType
+	} else {
+		templateTypeStr = strings.TrimSpace(*sealInput.publicKeyTemplateType)
+		if len(templateTypeStr) == 0 {
+			// default to RSA
+			templateTypeStr = defaultTemplateType
+		}
+	}
 
 	secretInputBytes := []byte(*sealInput.secretSourceData)
 	outputblobFilePath := strings.TrimSpace(*sealInput.outputblobFile)
 
 	if len(secretInputBytes) == 0 {
-		return errors.New("empty secret")
+		return errors.New("empty secret not allow")
 	}
 
 	if len(outputblobFilePath) == 0 {
@@ -105,7 +172,19 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		// parent handle already exists, retrieve and reuse it
 		parentHandle = RetrieveParentHandle(parentHandleFileName)
 	} else if os.IsNotExist(err) {
-		srkTemplatePtr := GetSRKTemplate()
+		var templateType TemplateType
+		switch typeUpper := strings.ToUpper(templateTypeStr); typeUpper {
+		case "RSA":
+			templateType = RSATemplate
+		case "ECC":
+			templateType = ECCTemplate
+		default:
+			// unknown but assuming to be the default one
+			log.Printf("Unknown template type sepcified %s and default to the %s template", templateTypeStr, defaultTemplateType)
+			templateType = defaultTemplate
+		}
+		log.Printf("template type input: %s", templateType.String())
+		srkTemplatePtr := GetSRKTemplate(templateType)
 		srkHandle, _, primaryKeyErr := tpm2.CreatePrimary(rw, tpm2.HandleOwner, tpm2.PCRSelection{},
 			ownerPwd, srkPwd, *srkTemplatePtr)
 		if primaryKeyErr != nil {
@@ -113,7 +192,7 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 			return primaryKeyErr
 		}
 
-		if writeHndlErr := writeParentHandle(parentHandleFileName, srkHandle); writeHndlErr != nil {
+		if writeHndlErr := writeParentHandleWithTemplateType(parentHandleFileName, srkHandle, &templateType); writeHndlErr != nil {
 			log.Printf("error: %v\n", writeHndlErr)
 		} else {
 			log.Println("parent handle file successfully saved")
@@ -134,54 +213,17 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 	}
 	log.Printf("PCR %v value: 0x%x\n", pcr, pcrVal)
 
-	sessionHandle, _, sessionErr := tpm2.StartAuthSession(
-		rw,
-		tpm2.HandleNull,  /*tpmKey*/
-		tpm2.HandleNull,  /*bindKey*/
-		make([]byte, 16), /*nonceCaller*/
-		nil,              /*secret*/
-		tpm2.SessionPolicy,
-		tpm2.AlgNull,
-		tpm2.AlgSHA256)
-
-	if sessionErr != nil {
-		log.Printf("unable to start session: %v\n", sessionErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return sessionErr
-	}
-	pcrSelection := tpm2.PCRSelection{
-		Hash: tpm2.AlgSHA256,
-		PCRs: []int{pcr},
-	}
-	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
-		log.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return policyPCRErr
-	}
-	if policyPwdErr := tpm2.PolicyPassword(rw, sessionHandle); policyPwdErr != nil {
-		log.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return policyPwdErr
-	}
-	policy, digestErr := tpm2.PolicyGetDigest(rw, sessionHandle)
-	if digestErr != nil {
-		log.Printf("unable to get policy digest: %v\n", digestErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return digestErr
+	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw, pcr)
+	if policy == nil || sessionPolicyGetErr != nil {
+		return sessionPolicyGetErr
 	}
 
-	if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-		log.Printf("%v\n", flushErr)
-		return flushErr
-	}
+	defer func() {
+		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
+			log.Printf("%v\n", flushErr)
+		}
+		log.Printf("sessionHandle 0x%x has been flushed\n", sessionHandle)
+	}()
 
 	objectPwd := "test"
 	sealPrivate, sealPublic, sealErr := tpm2.Seal(rw, parentHandle, srkPwd, objectPwd, policy, secretInputBytes)
@@ -197,6 +239,58 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 	log.Println("Seal screte with TPM device successfully done.")
 
 	return nil
+}
+
+// GetSimpleSessionPolicyWithPCR returns simple authentication session with session policy
+// the first return is sessionHandle,
+// the second return is policy digest associated with it from TPM
+// the third return is error if any
+func GetSimpleSessionPolicyWithPCR(rw io.ReadWriter, pcr int) (tpmutil.Handle, []byte, error) {
+	sessionHandle, _, sessionErr := tpm2.StartAuthSession(
+		rw,
+		tpm2.HandleNull,  /*tpmKey*/
+		tpm2.HandleNull,  /*bindKey*/
+		make([]byte, 16), /*nonceCaller*/
+		nil,              /*secret*/
+		tpm2.SessionPolicy,
+		tpm2.AlgNull,
+		tpm2.AlgSHA256)
+
+	if sessionErr != nil {
+		log.Printf("unable to start session: %v\n", sessionErr)
+		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
+			log.Printf("%v\n", flushErr)
+		}
+		return tpm2.HandleNull, nil, sessionErr
+	}
+
+	pcrSelection := tpm2.PCRSelection{
+		Hash: tpm2.AlgSHA256,
+		PCRs: []int{pcr},
+	}
+	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
+		log.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
+		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
+			log.Printf("%v\n", flushErr)
+		}
+		return tpm2.HandleNull, nil, policyPCRErr
+	}
+	if policyPwdErr := tpm2.PolicyPassword(rw, sessionHandle); policyPwdErr != nil {
+		log.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
+		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
+			log.Printf("%v\n", flushErr)
+		}
+		return tpm2.HandleNull, nil, policyPwdErr
+	}
+	policy, digestErr := tpm2.PolicyGetDigest(rw, sessionHandle)
+	if digestErr != nil {
+		log.Printf("unable to get policy digest: %v\n", digestErr)
+		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
+			log.Printf("%v\n", flushErr)
+		}
+		return tpm2.HandleNull, nil, digestErr
+	}
+	return sessionHandle, policy, nil
 }
 
 // FlushSessionHandle removes the session context from TPM device with a given session handle
@@ -218,8 +312,11 @@ func RetrieveParentHandle(handleFile string) (parentHandle tpmutil.Handle) {
 		log.Printf("unable to read parent handle file [%s]: %v\n", handleFile, readErr)
 		return tpm2.HandleNull
 	}
-
+	// the handleStr contains both parentHandle value and template type separated by comma (,)
+	// i.e.: <parentHandleValue>,<templateType>
 	handleStr := string(handleBytes)
+	// so we just need the first element, the parent handle value
+	handleStr = strings.Split(handleStr, parentHandleSeparator)[0]
 	// base 0 means infer the base from the string
 	if handleVal, convertErr := strconv.ParseUint(handleStr, 0, 32); convertErr != nil {
 		log.Printf("unable to convert handle string %s, file [%s] may be corrupted: %v\n", handleStr, handleFile, convertErr)
@@ -239,11 +336,12 @@ func GetTPMParentHandleFileName(outputblobFilePath string) string {
 	return filepath.Join(baseFolder, parentHandleFileName)
 }
 
-func writeParentHandle(parentHandleFileName string, parentHandle tpmutil.Handle) error {
-	handleHexVal := fmt.Sprintf("0x%x", parentHandle)
-	log.Printf("handleHexVal: %s\n", handleHexVal)
-	if writeErr := ioutil.WriteFile(parentHandleFileName, []byte(handleHexVal), 0644); writeErr != nil {
-		return fmt.Errorf("cannot write the parent handle value to %s: %v", parentHandleFileName, handleHexVal)
+func writeParentHandleWithTemplateType(parentHandleFileName string, parentHandle tpmutil.Handle, templateType *TemplateType) error {
+	templateTypeStr := templateType.String()
+	contentToWrite := fmt.Sprintf("0x%x%s%s", parentHandle, parentHandleSeparator, templateTypeStr)
+	log.Printf("contentToWrite: %s", contentToWrite)
+	if writeErr := ioutil.WriteFile(parentHandleFileName, []byte(contentToWrite), 0644); writeErr != nil {
+		return fmt.Errorf("cannot write the parent handle value to %s: %v", parentHandleFileName, contentToWrite)
 	}
 	return nil
 }

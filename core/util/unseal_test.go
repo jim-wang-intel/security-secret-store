@@ -124,7 +124,12 @@ func TestUnsealReadParentHandleFileError(t *testing.T) {
 }
 
 func sealData(t *testing.T, tpmDevice *TPMDevice, secret string, secretKeyFileName string) {
-	sealInput := SealInput{outputblobFile: &secretKeyFileName, secretSourceData: &secret}
+	// use ECC template for performance
+	templateType := "ecc"
+	sealInput := SealInput{
+		outputblobFile:        &secretKeyFileName,
+		secretSourceData:      &secret,
+		publicKeyTemplateType: &templateType}
 
 	// No parent handle file exists yet
 	if err := Seal(tpmDevice, sealInput); err != nil {

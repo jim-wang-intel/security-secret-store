@@ -93,19 +93,7 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 }
 
 func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd string) (data []byte, retErr error) {
-	sessionHandle, _, sessionErr := tpm2.StartAuthSession(
-		rw,
-		tpm2.HandleNull,  /*tpmKey*/
-		tpm2.HandleNull,  /*bindKey*/
-		make([]byte, 16), /*nonceCaller*/
-		nil,              /*secret*/
-		tpm2.SessionPolicy,
-		tpm2.AlgNull,
-		tpm2.AlgSHA256)
-	if sessionErr != nil {
-		retErr = fmt.Errorf("unable to start session: %v", sessionErr)
-		return nil, retErr
-	}
+	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw, pcr)
 	defer func() {
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
 			log.Printf("%v\n", flushErr)
@@ -113,36 +101,14 @@ func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd s
 		log.Printf("sessionHandle 0x%x has been flushed\n", sessionHandle)
 	}()
 
-	pcrSelection := tpm2.PCRSelection{
-		Hash: tpm2.AlgSHA256,
-		PCRs: []int{pcr},
-	}
-	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
-		log.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return nil, policyPCRErr
-	}
-	if policyPwdErr := tpm2.PolicyPassword(rw, sessionHandle); policyPwdErr != nil {
-		log.Printf("unable to require password for auth policy: %v\n", policyPwdErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return nil, policyPwdErr
-	}
-	policy, digestErr := tpm2.PolicyGetDigest(rw, sessionHandle)
-	if digestErr != nil {
-		log.Printf("unable to get policy digest: %v\n", digestErr)
-		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
-			log.Printf("%v\n", flushErr)
-		}
-		return nil, digestErr
+	if sessionPolicyGetErr != nil {
+		return nil, sessionPolicyGetErr
 	}
 
 	log.Printf("Got policy %v\n", policy)
 
 	unsealedData, err := tpm2.UnsealWithSession(rw, sessionHandle, objHandle, objectPwd)
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to unseal data: %v", err)
 	}
