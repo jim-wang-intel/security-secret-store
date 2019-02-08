@@ -32,8 +32,8 @@ func TestUnseal(t *testing.T) {
 	sealData(t, tpmDevice, secret, sealOutFile)
 	// then unseal
 	unsealInput := UnsealInput{
-		parentKeyPwd:      &testParentPwd,
-		secretKeyFileName: &sealOutFile,
+		ParentKeyPwd:      &testParentPwd,
+		SecretKeyFileName: &sealOutFile,
 	}
 	unsealString, unsealErr := Unseal(tpmDevice, unsealInput)
 	cleanup(t, tpmDevice, sealOutFile)
@@ -53,8 +53,8 @@ func TestUnsealWithEmptySecretFileName(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 	unsealInput := UnsealInput{
-		parentKeyPwd:      &testParentPwd,
-		secretKeyFileName: &emptyFileName,
+		ParentKeyPwd:      &testParentPwd,
+		SecretKeyFileName: &emptyFileName,
 	}
 	_, unsealErr := Unseal(tpmDevice, unsealInput)
 	if unsealErr == nil {
@@ -68,8 +68,8 @@ func TestUnsealWithNoTPM(t *testing.T) {
 	tpmPath := "/noTPM"
 	tpmDevice := NewTPMDevice(&tpmPath)
 	unsealInput := UnsealInput{
-		parentKeyPwd:      &testParentPwd,
-		secretKeyFileName: &outFileName,
+		ParentKeyPwd:      &testParentPwd,
+		SecretKeyFileName: &outFileName,
 	}
 	_, unsealErr := Unseal(tpmDevice, unsealInput)
 	if unsealErr == nil {
@@ -89,8 +89,8 @@ func TestUnsealReadDataError(t *testing.T) {
 	// then unseal with wrong output file name
 	wrongOutFile := "wrongOutfile"
 	unsealInput := UnsealInput{
-		parentKeyPwd:      &testParentPwd,
-		secretKeyFileName: &wrongOutFile,
+		ParentKeyPwd:      &testParentPwd,
+		SecretKeyFileName: &wrongOutFile,
 	}
 	_, unsealErr := Unseal(tpmDevice, unsealInput)
 	cleanup(t, tpmDevice, sealOutFile)
@@ -112,8 +112,8 @@ func TestUnsealReadParentHandleFileError(t *testing.T) {
 	// then unseal with wrong secret file path
 	wrongOutFile := "/wrong/path/to/secretOutfile"
 	unsealInput := UnsealInput{
-		parentKeyPwd:      &testParentPwd,
-		secretKeyFileName: &wrongOutFile,
+		ParentKeyPwd:      &testParentPwd,
+		SecretKeyFileName: &wrongOutFile,
 	}
 	_, unsealErr := Unseal(tpmDevice, unsealInput)
 	cleanup(t, tpmDevice, sealOutFile)

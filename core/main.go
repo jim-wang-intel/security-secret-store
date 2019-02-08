@@ -5,12 +5,11 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -58,14 +57,12 @@ func main() {
 		},
 	}
 	if *insecureSkipVerify == false {
-		// TODO add TPM
-		// check tpm if it is in the correct TPM device (unseal) ??
-		// get from ReadFile
-		// decrypt with TMP
+		// unseal the root CA certificate from secretHandler
+		// in the current concrete implementation it is bound with TPM device
+		caCert, unsealErr := UnsealCACertificate(config.SecretService.CAFilePath)
 
-		caCert, err := ioutil.ReadFile(config.SecretService.CAFilePath)
-		if err != nil {
-			lc.Error("Failed to load rootCA cert.")
+		if unsealErr != nil {
+			lc.Error("Failed to load rootCA cert. %v", unsealErr)
 			os.Exit(0)
 		}
 		lc.Info("successful loading the rootCA cert.")

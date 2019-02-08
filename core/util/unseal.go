@@ -36,17 +36,17 @@ import (
 // which loads both the private and public portions of an object into the TPM device
 // and then do the unseal without session handle
 type UnsealInput struct {
-	// parent key password from seal
-	parentKeyPwd *string
-	// the secret key file name for both public and private keys
-	secretKeyFileName *string
+	// ParentKeyPwd is the parent key password from seal
+	ParentKeyPwd *string
+	// SecretKeyFileName is the secret key file name for both public and private keys
+	SecretKeyFileName *string
 }
 
 // Unseal executes the Unseal subcommands
 func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, unsealErr error) {
-	log.Printf("secretKeyFileName: %s\n", *unsealInput.secretKeyFileName)
+	log.Printf("secretKeyFileName: %s\n", *unsealInput.SecretKeyFileName)
 
-	secretKeyFilename := strings.TrimSpace(*unsealInput.secretKeyFileName)
+	secretKeyFilename := strings.TrimSpace(*unsealInput.SecretKeyFileName)
 
 	if len(secretKeyFilename) == 0 {
 		return "", errors.New("secret key file path cannot be empty")
@@ -66,7 +66,7 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 	if sealPrivate, sealPublic, readErr := readSealedData(secretKeyFilename); readErr != nil {
 		return "", readErr
 	} else {
-		objHandle, _, loadErr := tpm2.Load(rw, parentHdl, *unsealInput.parentKeyPwd, sealPublic, sealPrivate)
+		objHandle, _, loadErr := tpm2.Load(rw, parentHdl, *unsealInput.ParentKeyPwd, sealPublic, sealPrivate)
 		if loadErr != nil {
 			log.Printf("parentHandle 0x%x sealPrivate: %v sealPublic: %v\n", parentHdl, sealPrivate, sealPublic)
 			log.Printf("unable to load data into TPM: %v\n", loadErr)
