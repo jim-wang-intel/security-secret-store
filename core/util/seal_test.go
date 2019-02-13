@@ -59,8 +59,8 @@ func TestSealWithNoTemplate(t *testing.T) {
 
 	emptyStr := ""
 
-	sealInput1 := SealInput{outputblobFile: &outFile1, secretSourceData: &secretData1}
-	sealInput2 := SealInput{outputblobFile: &outFile2, secretSourceData: &secretData2, publicKeyTemplateType: &emptyStr}
+	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1}
+	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &emptyStr}
 
 	if len(sealInput1.String()) == 0 {
 		t.Fatal("expecting some non-empty output string from seal input")
@@ -101,8 +101,8 @@ func TestSealWithECCTemplate(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 
-	sealInput1 := SealInput{outputblobFile: &outFile1, secretSourceData: &secretData1, publicKeyTemplateType: &templateType}
-	sealInput2 := SealInput{outputblobFile: &outFile2, secretSourceData: &secretData2, publicKeyTemplateType: &templateType}
+	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
+	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
 
 	log.Printf("sealInput1: %s, sealInput2: %s", sealInput1.String(), sealInput2.String())
 
@@ -139,8 +139,8 @@ func TestSealWithRSATemplate(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 
-	sealInput1 := SealInput{outputblobFile: &outFile1, secretSourceData: &secretData1, publicKeyTemplateType: &templateType}
-	sealInput2 := SealInput{outputblobFile: &outFile2, secretSourceData: &secretData2, publicKeyTemplateType: &templateType}
+	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
+	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
 
 	// No parent handle file exists yet
 	if err := Seal(tpmDevice, sealInput1); err != nil {
@@ -175,8 +175,8 @@ func TestSealWithUnknownTemplate(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 
-	sealInput1 := SealInput{outputblobFile: &outFile1, secretSourceData: &secretData1, publicKeyTemplateType: &templateType}
-	sealInput2 := SealInput{outputblobFile: &outFile2, secretSourceData: &secretData2, publicKeyTemplateType: &templateType}
+	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
+	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
 
 	// No parent handle file exists yet
 	if err := Seal(tpmDevice, sealInput1); err != nil {
@@ -209,7 +209,7 @@ func TestFlushContextNoParentHandleFile(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 
-	sealInput := SealInput{outputblobFile: &outFile, secretSourceData: &secretData, publicKeyTemplateType: &templateType}
+	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData, PublicKeyTemplateType: &templateType}
 
 	// No parent handle file exists yet
 	if err := Seal(tpmDevice, sealInput); err != nil {
@@ -286,7 +286,7 @@ func TestSealBadSealOutFilePath(t *testing.T) {
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
 	templateType := "ecc"
-	sealInput := SealInput{outputblobFile: &outFile, secretSourceData: &secretData, publicKeyTemplateType: &templateType}
+	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData, PublicKeyTemplateType: &templateType}
 
 	if err := Seal(tpmDevice, sealInput); err == nil {
 		t.Fatal("expecting error for bad seal output file path")
@@ -300,7 +300,7 @@ func TestSealNoOutputFile(t *testing.T) {
 	outFile := ""
 	tpmPath := "/dev/tpm0"
 	tpmDevice := NewTPMDevice(&tpmPath)
-	sealInput := SealInput{outputblobFile: &outFile, secretSourceData: &secretData}
+	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData}
 
 	if err := Seal(tpmDevice, sealInput); err == nil {
 		t.Fatalf("error expected: empty output file %v", err)
@@ -314,7 +314,7 @@ func TestSealNoTPM(t *testing.T) {
 	outFile := "outFile"
 	tpmPath := "/dev/noTPM"
 	tpmDevice := NewTPMDevice(&tpmPath)
-	sealInput := SealInput{outputblobFile: &outFile, secretSourceData: &secretData}
+	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData}
 
 	if err := Seal(tpmDevice, sealInput); err == nil {
 		t.Fatalf("error expected: empty outfile %v", err)
@@ -328,7 +328,7 @@ func TestSealNoSecretData(t *testing.T) {
 	outFile := "outfile"
 	tpmPath := "/dev/noTPM"
 	tpmDevice := NewTPMDevice(&tpmPath)
-	sealInput := SealInput{outputblobFile: &outFile, secretSourceData: &secretData}
+	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData}
 
 	if err := Seal(tpmDevice, sealInput); err == nil {
 		t.Fatalf("error expected: empty secret string %v", err)
@@ -343,12 +343,12 @@ func TestSealNullInputs(t *testing.T) {
 	tpmPath := "/dev/noTPM"
 	tpmDevice := NewTPMDevice(&tpmPath)
 
-	nullSecretSealInput := SealInput{outputblobFile: &outFile, secretSourceData: nil}
+	nullSecretSealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: nil}
 	if err := Seal(tpmDevice, nullSecretSealInput); err == nil {
 		t.Fatal("error expected: null secret string")
 	}
 
-	nullOutputBlobFileSealInput := SealInput{outputblobFile: nil, secretSourceData: &secretData}
+	nullOutputBlobFileSealInput := SealInput{OutputblobFile: nil, SecretSourceData: &secretData}
 	if err := Seal(tpmDevice, nullOutputBlobFileSealInput); err == nil {
 		t.Fatal("error expected: null output blob file")
 	}

@@ -19,21 +19,20 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 )
 
 type Secret struct {
-	Token string `json:"root_token"` // TODO Weird naming this should be called 'token' not root token
+	Token string `json:"root_token"`
 }
 
 func getSecret(filename string) (Secret, error) {
-	// TODO secure this also
+	// unseal the secrets (like master key and root token) that are used to unlock the vault
+	raw, unsealErr := UnsealVaultSecrets(filename)
 
 	s := Secret{}
-	raw, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return s, err
+	if unsealErr != nil {
+		return s, unsealErr
 	}
-	err = json.Unmarshal(raw, &s)
-	return s, err
+	unmarshalErr := json.Unmarshal(raw, &s)
+	return s, unmarshalErr
 }

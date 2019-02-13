@@ -61,19 +61,19 @@ func (template TemplateType) String() string {
 
 // SealInput data passed into seal operation
 type SealInput struct {
-	secretSourceData      *string
-	outputblobFile        *string
-	publicKeyTemplateType *string
+	SecretSourceData      *string
+	OutputblobFile        *string
+	PublicKeyTemplateType *string
 }
 
 // String toString method for SealInput
 func (seal *SealInput) String() string {
 	var outFileName, templateType string
-	if seal.outputblobFile != nil {
-		outFileName = *seal.outputblobFile
+	if seal.OutputblobFile != nil {
+		outFileName = *seal.OutputblobFile
 	}
-	if seal.publicKeyTemplateType != nil {
-		templateType = *seal.publicKeyTemplateType
+	if seal.PublicKeyTemplateType != nil {
+		templateType = *seal.PublicKeyTemplateType
 	}
 	return fmt.Sprintf("Output file name: %s, key template type: %s", outFileName, templateType)
 }
@@ -124,27 +124,27 @@ func GetSRKTemplate(tempType TemplateType) (srkTemplate *tpm2.Public) {
 // Seal executes the Seal subcommands
 func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 	// nil pointer check:
-	if sealInput.secretSourceData == nil {
+	if sealInput.SecretSourceData == nil {
 		return errors.New("empty secret not allow")
 	}
-	if sealInput.outputblobFile == nil {
+	if sealInput.OutputblobFile == nil {
 		return errors.New("output file path cannot be empty")
 	}
 
 	// default to RSA if nil or empty
 	var templateTypeStr string
-	if sealInput.publicKeyTemplateType == nil {
+	if sealInput.PublicKeyTemplateType == nil {
 		templateTypeStr = defaultTemplateType
 	} else {
-		templateTypeStr = strings.TrimSpace(*sealInput.publicKeyTemplateType)
+		templateTypeStr = strings.TrimSpace(*sealInput.PublicKeyTemplateType)
 		if len(templateTypeStr) == 0 {
 			// default to RSA
 			templateTypeStr = defaultTemplateType
 		}
 	}
 
-	secretInputBytes := []byte(*sealInput.secretSourceData)
-	outputblobFilePath := strings.TrimSpace(*sealInput.outputblobFile)
+	secretInputBytes := []byte(*sealInput.SecretSourceData)
+	outputblobFilePath := strings.TrimSpace(*sealInput.OutputblobFile)
 
 	if len(secretInputBytes) == 0 {
 		return errors.New("empty secret not allow")
@@ -172,6 +172,8 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		// parent handle already exists, retrieve and reuse it
 		parentHandle = RetrieveParentHandle(parentHandleFileName)
 	} else if os.IsNotExist(err) {
+		// maybe in the default location:
+
 		var templateType TemplateType
 		switch typeUpper := strings.ToUpper(templateTypeStr); typeUpper {
 		case "RSA":

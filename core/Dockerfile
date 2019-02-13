@@ -1,6 +1,6 @@
 FROM alpine:3.7
 
-RUN mkdir -p /edgex/res
+RUN mkdir -p /edgex/res/secrets
 
 WORKDIR /edgex
 

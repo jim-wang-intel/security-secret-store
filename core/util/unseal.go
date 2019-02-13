@@ -44,12 +44,22 @@ type UnsealInput struct {
 
 // Unseal executes the Unseal subcommands
 func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, unsealErr error) {
+	// nil pointer check
+	if unsealInput.SecretKeyFileName == nil {
+		return "", errors.New("secret key file path cannot be empty")
+	}
+
 	log.Printf("secretKeyFileName: %s\n", *unsealInput.SecretKeyFileName)
 
 	secretKeyFilename := strings.TrimSpace(*unsealInput.SecretKeyFileName)
 
 	if len(secretKeyFilename) == 0 {
 		return "", errors.New("secret key file path cannot be empty")
+	}
+
+	var parentPwd string
+	if unsealInput.ParentKeyPwd != nil {
+		parentPwd = *unsealInput.ParentKeyPwd
 	}
 
 	rw, err := tpmDev.OpenTPMDevice()
@@ -66,7 +76,7 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 	if sealPrivate, sealPublic, readErr := readSealedData(secretKeyFilename); readErr != nil {
 		return "", readErr
 	} else {
-		objHandle, _, loadErr := tpm2.Load(rw, parentHdl, *unsealInput.ParentKeyPwd, sealPublic, sealPrivate)
+		objHandle, _, loadErr := tpm2.Load(rw, parentHdl, parentPwd, sealPublic, sealPrivate)
 		if loadErr != nil {
 			log.Printf("parentHandle 0x%x sealPrivate: %v sealPublic: %v\n", parentHdl, sealPrivate, sealPublic)
 			log.Printf("unable to load data into TPM: %v\n", loadErr)
@@ -117,12 +127,12 @@ func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd s
 }
 
 func readParentHandle(secretKeyFilename string) (parentHandle tpmutil.Handle) {
-	parentHandleFileName := GetTPMParentHandleFileName(secretKeyFilename)
-	if _, err := os.Stat(parentHandleFileName); err == nil {
+	parentHndlFileName := GetTPMParentHandleFileName(secretKeyFilename)
+	if _, err := os.Stat(parentHndlFileName); err == nil {
 		// parent handle already exists, retrieve and reuse it
-		parentHandle = RetrieveParentHandle(parentHandleFileName)
+		parentHandle = RetrieveParentHandle(parentHndlFileName)
 	} else if os.IsNotExist(err) {
-		log.Printf("unable to find the parent handle file %s", parentHandleFileName)
+		log.Printf("unable to find the parent handle file %s", parentHndlFileName)
 	} else {
 		log.Printf("error on os stat parent handle: %v", err)
 	}

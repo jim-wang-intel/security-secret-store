@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -28,7 +29,7 @@ func main() {
 
 	useConsul := flag.Bool("consul", false, "retrieve configuration from consul server")
 	initNeeded := flag.Bool("init", false, "run init procedure for security service.")
-	insecureSkipVerify := flag.Bool("insureskipverify", true, "skip server side SSL verification, mainly for self-signed cert.")
+	insecureSkipVerify := flag.Bool("insecureSkipVerify", true, "skip server side SSL verification, mainly for self-signed cert.")
 	configFileLocation := flag.String("configfile", "res/configuration.toml", "configuration file")
 	waitInterval := flag.Int("wait", 30, "time to wait between checking the vault status in seconds.")
 
@@ -57,12 +58,9 @@ func main() {
 		},
 	}
 	if *insecureSkipVerify == false {
-		// unseal the root CA certificate from secretHandler
-		// in the current concrete implementation it is bound with TPM device
-		caCert, unsealErr := UnsealCACertificate(config.SecretService.CAFilePath)
-
-		if unsealErr != nil {
-			lc.Error("Failed to load rootCA cert. %v", unsealErr)
+		caCert, err := ioutil.ReadFile(config.SecretService.CAFilePath)
+		if err != nil {
+			lc.Error("Failed to load rootCA cert.")
 			os.Exit(0)
 		}
 		lc.Info("successful loading the rootCA cert.")
@@ -84,7 +82,7 @@ func main() {
 		HttpClient: client,
 	})
 
-	//TODO research 's' ?? maybe vault api doc to find out
+	// system handle for vault APIs
 	s := a.Sys()
 	inited := false
 	sealed := true
@@ -95,7 +93,6 @@ func main() {
 			lc.Error(fmt.Sprintf("Error while checking the initialization status: %s", err.Error()))
 		} else {
 
-			// TODO secure this as well (master key)
 			k, err := initVault(s, config.SecretService.TokenPath, inited)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Error while initializing the vault with info: %s", err.Error()))

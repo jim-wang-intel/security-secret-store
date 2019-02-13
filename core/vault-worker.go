@@ -36,9 +36,17 @@ func initVault(c *api.Sys, path string, inited bool) (string, error) {
 		}
 
 		resp, err := c.Init(ir)
-		r, _ := json.Marshal(resp)
-		ioutil.WriteFile(path, r, 0644)
-		lc.Info(string(r))
+
+		vaultSecretBytes, _ := json.Marshal(resp)
+
+		// seal the vault secrets with security / TPM device
+		if sealErr := SealVaultSecrets(vaultSecretBytes, path); sealErr != nil {
+			err = sealErr
+		} else {
+			lc.Info("Vault's secrets have been sealed securely")
+		}
+
+		lc.Info(string(vaultSecretBytes))
 		lc.Info("Vault has been initialized successfully.")
 
 		return resp.KeysB64[0], err
@@ -51,7 +59,6 @@ func initVault(c *api.Sys, path string, inited bool) (string, error) {
 	return s.Token, nil
 }
 
-// TODO token should be called master key..
 func unsealVault(c *api.Sys, token string) (bool, error) {
 	if len(token) == 0 {
 		return true, errors.New("error:empty token")
