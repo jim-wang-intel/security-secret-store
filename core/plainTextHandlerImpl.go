@@ -27,7 +27,10 @@ type PlainText struct{}
 
 // SealVaultSecrets writes secret to outputfile
 func (p PlainText) SealVaultSecrets(dataBytes []byte, outputFile string) error {
-	ioutil.WriteFile(outputFile, dataBytes, 0644)
+	writeErr := ioutil.WriteFile(outputFile, dataBytes, 0644)
+	if writeErr != nil {
+		return writeErr
+	}
 	return nil
 }
 
@@ -40,7 +43,7 @@ func (p PlainText) UnsealVaultSecrets(secretFile string) ([]byte, error) {
 	return raw, nil
 }
 
-// UnsealCACertificate implements the secretHandler to satisfy the interface
+// UnsealCACertificate implements the secretHandler to statisfy ther interface.
 func (p PlainText) UnsealCACertificate(caCertFile string) ([]byte, error) {
 	return nil, nil
 }

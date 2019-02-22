@@ -70,7 +70,6 @@ func (t TPM) SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string
 		SecretSourceData:      &vaultKeys,
 		PublicKeyTemplateType: &templateType,
 	}
-
 	lc.Debug("keysSealInput: %s", keysSealInput.String())
 
 	if err := util.Seal(getTPMDevice(), keysSealInput); err != nil {
