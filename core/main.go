@@ -87,13 +87,15 @@ func main() {
 	inited := false
 	sealed := true
 
+	secretType := NewSecretType(config.SecretService.SecretType)
+
 	for {
 		inited, err = s.InitStatus()
 		if err != nil {
 			lc.Error(fmt.Sprintf("Error while checking the initialization status: %s", err.Error()))
 		} else {
 
-			k, err := initVault(s, config.SecretService.TokenPath, inited)
+			k, err := initVault(s, config.SecretService.TokenPath, inited, secretType)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Error while initializing the vault with info: %s", err.Error()))
 			}
@@ -120,7 +122,7 @@ func main() {
 	// Importing Admin and Kong Policies in Vault + create corresponding tokens
 	// -----------------------------------------------------------------------------------
 	// Get the Vault Root Token generated after Vault initialization
-	rootToken, err := getSecret(config.SecretService.TokenPath)
+	rootToken, err := getSecret(config.SecretService.TokenPath, secretType)
 	if err != nil {
 		lc.Error("Fatal Error fetching Vault root token.")
 		fatalIfErr(err, "Root token fetch failure")
@@ -191,7 +193,7 @@ func main() {
 	}
 	// -----------------------------------------------------------------------------------
 
-	hasCertKeyPair, err := certKeyPairInStore(config, secretServiceBaseURL, client)
+	hasCertKeyPair, err := certKeyPairInStore(config, secretServiceBaseURL, client, secretType)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Failed to check if the cert&key pair is in secret store with error %s.", err.Error()))
 		os.Exit(0)
@@ -212,7 +214,7 @@ func main() {
 	lc.Info("Load cert&key pair from volume successfully, now will upload to secret store.")
 
 	for {
-		done, _ := uploadProxyCerts(config, secretServiceBaseURL, cert, sk, client)
+		done, _ := uploadProxyCerts(config, secretServiceBaseURL, cert, sk, client, secretType)
 		if done == true {
 			// Entropy
 			os.Exit(0)

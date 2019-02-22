@@ -34,6 +34,8 @@ import (
 
 var tpmDevice *util.TPMDevice
 
+type TPM struct{}
+
 const (
 	vaultKeysSealFileSuffix       = "_keys"
 	vaultKeysBase64SealFileSuffix = "_keysbase64"
@@ -42,7 +44,7 @@ const (
 )
 
 // SealVaultSecrets seals the secret data with TPM device
-func SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string) error {
+func (t TPM) SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string) error {
 	// cleanup the left-over sealed file under the same directory of encryptedOutputFile
 	// before we do a new seal
 	cleanup(encryptedOutputFile)
@@ -106,7 +108,7 @@ func SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string) error 
 }
 
 // UnsealVaultSecrets unlocks the secret data with TPM device
-func UnsealVaultSecrets(vaultSecretFile string) ([]byte, error) {
+func (t TPM) UnsealVaultSecrets(vaultSecretFile string) ([]byte, error) {
 	// due to the restriciton of TPM, the secretData in JSON is split
 	// into small chunck like each field per sealInput
 	// so unsealInput also has the similar way to each field
@@ -157,7 +159,7 @@ func UnsealVaultSecrets(vaultSecretFile string) ([]byte, error) {
 
 // UnsealCACertificate implements the secretHandler interface for the hardware TPM device
 // in this concrete tpmSecretReader example
-func UnsealCACertificate(caCertFile string) ([]byte, error) {
+func (t TPM) UnsealCACertificate(caCertFile string) ([]byte, error) {
 	unsealInput := util.UnsealInput{
 		SecretKeyFileName: &caCertFile,
 	}

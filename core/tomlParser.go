@@ -43,6 +43,7 @@ type secretservice struct {
 	PolicyName4Kong  string
 	TokenName4Kong   string
 	SNIS             string
+	SecretType       string
 }
 
 // LoadTomlConfig Loading the TOML configuration into structure

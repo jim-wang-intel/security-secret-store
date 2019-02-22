@@ -25,9 +25,9 @@ type Secret struct {
 	Token string `json:"root_token"`
 }
 
-func getSecret(filename string) (Secret, error) {
+func getSecret(filename string, secretType SecretReader) (Secret, error) {
 	// unseal the secrets (like master key and root token) that are used to unlock the vault
-	raw, unsealErr := UnsealVaultSecrets(filename)
+	raw, unsealErr := secretType.UnsealVaultSecrets(filename)
 
 	s := Secret{}
 	if unsealErr != nil {

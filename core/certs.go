@@ -44,7 +44,9 @@ type CertInfo struct {
 //TODO maybe secure all of these certs? or wherever we read them in
 
 func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http.Client) error {
-	cert, key, err := getCertKeyPair(config, secretBaseURL, c)
+	//
+	var secretType SecretReader
+	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return err
 	}
@@ -70,9 +72,9 @@ func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http
 	return nil
 }
 
-func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client) (string, string, error) {
+func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (string, string, error) {
 
-	t, err := getSecret(config.SecretService.TokenPath)
+	t, err := getSecret(config.SecretService.TokenPath, secretType)
 	if err != nil {
 		return "", "", err
 	}
@@ -92,8 +94,8 @@ func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client) (s
 	return collection.Section.Cert, collection.Section.Key, nil
 }
 
-func certKeyPairInStore(config *tomlConfig, secretBaseURL string, c *http.Client) (bool, error) {
-	cert, key, err := getCertKeyPair(config, secretBaseURL, c)
+func certKeyPairInStore(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (bool, error) {
+	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return false, err
 	}

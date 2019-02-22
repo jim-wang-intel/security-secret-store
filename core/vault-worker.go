@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-func initVault(c *api.Sys, path string, inited bool) (string, error) {
+func initVault(c *api.Sys, path string, inited bool, secretType SecretReader) (string, error) {
 
 	if inited == false {
 		ir := &api.InitRequest{
@@ -40,7 +40,7 @@ func initVault(c *api.Sys, path string, inited bool) (string, error) {
 		vaultSecretBytes, _ := json.Marshal(resp)
 
 		// seal the vault secrets with security / TPM device
-		if sealErr := SealVaultSecrets(vaultSecretBytes, path); sealErr != nil {
+		if sealErr := secretType.SealVaultSecrets(vaultSecretBytes, path); sealErr != nil {
 			err = sealErr
 		} else {
 			lc.Info("Vault's secrets have been sealed securely")
@@ -51,7 +51,7 @@ func initVault(c *api.Sys, path string, inited bool) (string, error) {
 
 		return resp.KeysB64[0], err
 	}
-	s, err := getSecret(path)
+	s, err := getSecret(path, secretType)
 	if err != nil {
 		return "", err
 	}
@@ -80,8 +80,8 @@ func unsealVault(c *api.Sys, token string) (bool, error) {
 	return resp.Sealed, err
 }
 
-func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client) (bool, error) {
-	cert, key, err := getCertKeyPair(config, secretBaseURL, c)
+func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (bool, error) {
+	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return false, err
 	}
@@ -98,14 +98,14 @@ func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client) (
             --data @${_PAYLOAD_KONG} \
             http://localhost:8200/v1/secret/edgex/pki/tls/edgex-kong
 */
-func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client) (bool, error) {
+func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client, secretType SecretReader) (bool, error) {
 	body := &CertPair{
 		Cert: cert,
 		Key:  sk,
 	}
 
 	// TODO (just a note--thinking this is Kong Cert)
-	t, err := getSecret(config.SecretService.TokenPath)
+	t, err := getSecret(config.SecretService.TokenPath, secretType)
 	if err != nil {
 		lc.Error(err.Error())
 		return false, err
