@@ -14,18 +14,19 @@
 // limitations under the License.
 //
 
-package main
+package factory
 
 import (
 	"testing"
 
+	"github.com/edgexfoundry/security-secret-store/core/internal/secret"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewSecretPlainType(t *testing.T) {
 
 	secretType := "plain"
-	expectedType := PlainText{}
+	expectedType := secret.PlainText{}
 
 	createdType := NewSecretType(secretType)
 
@@ -40,7 +41,7 @@ func TestNewSecretPlainType(t *testing.T) {
 func TestNewSecretTPMType(t *testing.T) {
 
 	secretType := "TPM"
-	expectedType := TPM{}
+	expectedType := secret.TPM{}
 
 	createdType := NewSecretType(secretType)
 
@@ -55,7 +56,7 @@ func TestNewSecretTPMType(t *testing.T) {
 func TestNewSecretBogusType(t *testing.T) {
 
 	secretType := "mock"
-	expectedType := PlainText{}
+	expectedType := secret.PlainText{}
 
 	createdType := NewSecretType(secretType)
 

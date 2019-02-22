@@ -17,25 +17,33 @@
  * notice embedded in Materials by Intel or Intel's suppliers or licensors in any way.
  */
 
-package main
+package secret
 
-// SecretReader intefaces the process of wrapping (or sealing) and
-// un-wrapping (or unsealing) the underneath secrets of secure storage
-type SecretReader interface {
-	// SealVaultSecrets is to seal or bind the secret data of Vault, which includes
-	// key shares and root token- the encryptedOutputFile is to specify the output
-	// encrypted file path and name; returns error if any during the seal process
-	SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string) error
+import (
+	"io/ioutil"
+)
 
-	// UnsealVaultSecrets is to unseal or unbind the secret data of Vault
-	// (not the secrets inside the vault but the secrets to unlock the Vault,
-	// like master key and root token as examples)
-	// the first return is the vault's secret data (both keys and root token)
-	// the second return is any error during the unsealing process
-	UnsealVaultSecrets(vaultSecretFile string) ([]byte, error)
+type PlainText struct{}
 
-	// UnsealCACertificate is to unseal the Certificate Authority (CA) certificate
-	// the first return is the certificate PEM bytes after unsealing process
-	// the second return is any error associated with the unsealing process
-	UnsealCACertificate(caCertFile string) ([]byte, error)
+// SealVaultSecrets writes secret to outputfile
+func (p PlainText) SealVaultSecrets(dataBytes []byte, outputFile string) error {
+	writeErr := ioutil.WriteFile(outputFile, dataBytes, 0644)
+	if writeErr != nil {
+		return writeErr
+	}
+	return nil
+}
+
+// UnsealVaultSecrets reads secrets from secretFile
+func (p PlainText) UnsealVaultSecrets(secretFile string) ([]byte, error) {
+	raw, err := ioutil.ReadFile(secretFile)
+	if err != nil {
+		return raw, err
+	}
+	return raw, nil
+}
+
+// UnsealCACertificate implements the secretHandler to statisfy ther interface.
+func (p PlainText) UnsealCACertificate(caCertFile string) ([]byte, error) {
+	return nil, nil
 }

@@ -38,5 +38,4 @@ policypath4kong = "res/vault-policy-kong.hcl"
 policyname4kong = "kong"
 tokenname4kong = "kong"
 snis = "edgex.com"
-secrettype= "fake"
-
+secrettype = "plaintext"

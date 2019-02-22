@@ -17,7 +17,7 @@
  * notice embedded in Materials by Intel or Intel's suppliers or licensors in any way.
  */
 
-package main
+package secret
 
 import (
 	"encoding/json"
@@ -70,7 +70,7 @@ func (t TPM) SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string
 		SecretSourceData:      &vaultKeys,
 		PublicKeyTemplateType: &templateType,
 	}
-	lc.Debug("keysSealInput: %s", keysSealInput.String())
+	log.Printf("keysSealInput: %s", keysSealInput.String())
 
 	if err := util.Seal(getTPMDevice(), keysSealInput); err != nil {
 		return fmt.Errorf("Encountered error for TPM seal vault keys: %v, with input: %v", err, keysSealInput.String())
@@ -84,7 +84,7 @@ func (t TPM) SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string
 		PublicKeyTemplateType: &templateType,
 	}
 
-	lc.Debug("keysBase64SealInput: %s", keysBase64SealInput.String())
+	log.Printf("keysBase64SealInput: %s", keysBase64SealInput.String())
 
 	if err := util.Seal(getTPMDevice(), keysBase64SealInput); err != nil {
 		return fmt.Errorf("Encountered error for TPM seal vault keys base 64: %v, with input: %v", err, keysBase64SealInput.String())
@@ -97,7 +97,7 @@ func (t TPM) SealVaultSecrets(secretDataBytes []byte, encryptedOutputFile string
 		PublicKeyTemplateType: &templateType,
 	}
 
-	lc.Debug("rootTokenSealInput: %s", rootTokenSealInput.String())
+	log.Printf("rootTokenSealInput: %s", rootTokenSealInput.String())
 
 	if err := util.Seal(getTPMDevice(), rootTokenSealInput); err != nil {
 		return fmt.Errorf("Encountered error for TPM seal vault root token: %v, with input: %v", err, rootTokenSealInput.String())

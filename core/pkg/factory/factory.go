@@ -14,22 +14,24 @@
 // limitations under the License.
 //
 
-package main
+package factory
 
 import (
-	"fmt"
+	"log"
 	"strings"
+
+	"github.com/edgexfoundry/security-secret-store/core/internal/secret"
 )
 
-func NewSecretType(secretType string) SecretReader {
+func NewSecretType(secretType string) secret.SecretReader {
 	secretTypeLower := strings.ToLower(secretType)
 	switch secretTypeLower {
 	case "tpm":
-		return TPM{}
-	case "plain":
-		return PlainText{}
+		return secret.TPM{}
+	case "plaintext":
+		return secret.PlainText{}
 	default:
-		lc.Warn(fmt.Sprintf("unknown secret type '%s' requested, Supported secret types are  Plain & TPM. Hence switching to default type plain", secretType))
-		return PlainText{}
+		log.Printf("unknown secret type '%s' requested, Supported secret types are  Plain & TPM. Hence switching to default type plain", secretType)
+		return secret.PlainText{}
 	}
 }

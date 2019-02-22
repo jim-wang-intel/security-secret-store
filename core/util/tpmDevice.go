@@ -51,6 +51,17 @@ func (tpmDev *TPMDevice) OpenTPMDevice() (io.ReadWriteCloser, error) {
 	return openDeviceTPM(tpmDev.devicePath)
 }
 
+func (tpmDev *TPMDevice) IsDeviceAvailable() bool {
+	rw, err := tpm2.OpenTPM(*tpmDev.devicePath)
+	if rw != nil {
+		defer rw.Close()
+	}
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func openDeviceTPM(tpmPath *string) (io.ReadWriteCloser, error) {
 	rw, err := tpm2.OpenTPM(*tpmPath)
 	if err != nil {

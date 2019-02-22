@@ -11,6 +11,7 @@ import (
 	"time"
 
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/security-secret-store/core/pkg/factory"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -87,7 +88,7 @@ func main() {
 	inited := false
 	sealed := true
 
-	secretType := NewSecretType(config.SecretService.SecretType)
+	secretType := factory.NewSecretType(config.SecretService.SecretType)
 
 	for {
 		inited, err = s.InitStatus()

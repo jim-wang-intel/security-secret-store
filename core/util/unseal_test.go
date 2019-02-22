@@ -22,11 +22,12 @@ package util
 import "testing"
 
 func TestUnseal(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	testParentPwd := ""
 	secret := "SecretString"
 	sealOutFile := "outfile"
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	// seal secret:
 	sealData(t, tpmDevice, secret, sealOutFile)
@@ -48,10 +49,11 @@ func TestUnseal(t *testing.T) {
 }
 
 func TestUnsealWithEmptySecretFileName(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	testParentPwd := ""
 	emptyFileName := ""
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 	unsealInput := UnsealInput{
 		ParentKeyPwd:      &testParentPwd,
 		SecretKeyFileName: &emptyFileName,
@@ -78,11 +80,12 @@ func TestUnsealWithNoTPM(t *testing.T) {
 }
 
 func TestUnsealReadDataError(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	testParentPwd := ""
 	secret := "SecretString"
 	sealOutFile := "outfile"
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	// seal secret:
 	sealData(t, tpmDevice, secret, sealOutFile)
@@ -101,11 +104,12 @@ func TestUnsealReadDataError(t *testing.T) {
 }
 
 func TestUnsealReadParentHandleFileError(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	testParentPwd := ""
 	secret := "SecretString"
 	sealOutFile := "outfile"
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	// seal secret:
 	sealData(t, tpmDevice, secret, sealOutFile)

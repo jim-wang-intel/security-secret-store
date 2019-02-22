@@ -29,9 +29,17 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-func TestGetSessionList(t *testing.T) {
+var tpmDevice *TPMDevice
+
+func TestMain(m *testing.M) {
 	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
+	tpmDevice = NewTPMDevice(&tpmPath)
+	os.Exit(m.Run())
+}
+func TestGetSessionList(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	rw, err := tpmDevice.OpenTPMDevice()
 	if err != nil {
 		t.Fatal("cannot open TPM device")
@@ -48,14 +56,14 @@ func TestGetSessionList(t *testing.T) {
 }
 
 func TestSealWithNoTemplate(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData1 := "SecretString1"
 	secretData2 := "SecretString2"
 
 	outFile1 := "outfile1"
 	outFile2 := "outfile2"
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	emptyStr := ""
 
@@ -90,6 +98,9 @@ func TestSealWithNoTemplate(t *testing.T) {
 }
 
 func TestSealWithECCTemplate(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData1 := "SecretString1"
 	secretData2 := "SecretString2"
 
@@ -97,9 +108,6 @@ func TestSealWithECCTemplate(t *testing.T) {
 	outFile2 := "outfile2"
 
 	templateType := "ecc"
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
 	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
@@ -128,6 +136,9 @@ func TestSealWithECCTemplate(t *testing.T) {
 }
 
 func TestSealWithRSATemplate(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData1 := "SecretString1"
 	secretData2 := "SecretString2"
 
@@ -135,9 +146,6 @@ func TestSealWithRSATemplate(t *testing.T) {
 	outFile2 := "outfile2"
 
 	templateType := "rsa"
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
 	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
@@ -164,6 +172,9 @@ func TestSealWithRSATemplate(t *testing.T) {
 }
 
 func TestSealWithUnknownTemplate(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData1 := "SecretString1"
 	secretData2 := "SecretString2"
 
@@ -171,9 +182,6 @@ func TestSealWithUnknownTemplate(t *testing.T) {
 	outFile2 := "outfile2"
 
 	templateType := "unknown"
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	sealInput1 := SealInput{OutputblobFile: &outFile1, SecretSourceData: &secretData1, PublicKeyTemplateType: &templateType}
 	sealInput2 := SealInput{OutputblobFile: &outFile2, SecretSourceData: &secretData2, PublicKeyTemplateType: &templateType}
@@ -200,14 +208,14 @@ func TestSealWithUnknownTemplate(t *testing.T) {
 }
 
 func TestFlushContextNoParentHandleFile(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData := "SecretString"
 
 	outFile := "outfile"
 
 	templateType := "ecc"
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 
 	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData, PublicKeyTemplateType: &templateType}
 
@@ -246,8 +254,9 @@ func TestGetDefaultSRKTemplate(t *testing.T) {
 }
 
 func TestFlushContextNoHandle(t *testing.T) {
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	parentHandle := uint32(0)
 
 	// Cleanup
@@ -257,9 +266,9 @@ func TestFlushContextNoHandle(t *testing.T) {
 }
 
 func TestFlushContextWrongHandle(t *testing.T) {
-
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	parentHandle := uint32(12345)
 
 	// Cleanup
@@ -269,7 +278,6 @@ func TestFlushContextWrongHandle(t *testing.T) {
 }
 
 func TestFlushContextNoTPM(t *testing.T) {
-
 	tpmPath := "/dev/noTPM"
 	tpmDevice := NewTPMDevice(&tpmPath)
 	parentHandle := uint32(RetrieveParentHandle(parentHandleFileName))
@@ -281,10 +289,11 @@ func TestFlushContextNoTPM(t *testing.T) {
 }
 
 func TestSealBadSealOutFilePath(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData := "SecretString"
 	outFile := "/dev/tpm0/bad"
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 	templateType := "ecc"
 	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData, PublicKeyTemplateType: &templateType}
 
@@ -296,10 +305,11 @@ func TestSealBadSealOutFilePath(t *testing.T) {
 }
 
 func TestSealNoOutputFile(t *testing.T) {
+	if !tpmDevice.IsDeviceAvailable() {
+		t.Skip()
+	}
 	secretData := "SecretString"
 	outFile := ""
-	tpmPath := "/dev/tpm0"
-	tpmDevice := NewTPMDevice(&tpmPath)
 	sealInput := SealInput{OutputblobFile: &outFile, SecretSourceData: &secretData}
 
 	if err := Seal(tpmDevice, sealInput); err == nil {

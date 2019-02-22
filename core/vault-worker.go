@@ -24,10 +24,11 @@ import (
 	"net/http"
 
 	"github.com/dghubble/sling"
+	"github.com/edgexfoundry/security-secret-store/core/internal/secret"
 	"github.com/hashicorp/vault/api"
 )
 
-func initVault(c *api.Sys, path string, inited bool, secretType SecretReader) (string, error) {
+func initVault(c *api.Sys, path string, inited bool, secretType secret.SecretReader) (string, error) {
 
 	if inited == false {
 		ir := &api.InitRequest{
@@ -80,7 +81,7 @@ func unsealVault(c *api.Sys, token string) (bool, error) {
 	return resp.Sealed, err
 }
 
-func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (bool, error) {
+func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, secretType secret.SecretReader) (bool, error) {
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return false, err
@@ -98,7 +99,7 @@ func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, s
             --data @${_PAYLOAD_KONG} \
             http://localhost:8200/v1/secret/edgex/pki/tls/edgex-kong
 */
-func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client, secretType SecretReader) (bool, error) {
+func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client, secretType secret.SecretReader) (bool, error) {
 	body := &CertPair{
 		Cert: cert,
 		Key:  sk,

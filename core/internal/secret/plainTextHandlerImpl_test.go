@@ -1,8 +1,7 @@
-package main
+package secret
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -36,7 +35,6 @@ func TestUnSealVaultSecrets(t *testing.T) {
 		if unSealedBytes, err := mockPlainText.UnsealVaultSecrets(mockSealOutputFile); err != nil {
 			t.Fatal()
 		} else {
-			fmt.Println(string(unSealedBytes))
 			if strings.Compare(string(unSealedBytes), mockVaultSecret) != 0 {
 				t.Fatal("unsealed bytes are not equal")
 			}

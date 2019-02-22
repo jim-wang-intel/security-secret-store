@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/edgexfoundry/security-secret-store/core/internal/secret"
+
 	"github.com/dghubble/sling"
 )
 
@@ -45,7 +47,7 @@ type CertInfo struct {
 
 func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http.Client) error {
 	//
-	var secretType SecretReader
+	var secretType secret.SecretReader
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return err
@@ -72,7 +74,7 @@ func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http
 	return nil
 }
 
-func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (string, string, error) {
+func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client, secretType secret.SecretReader) (string, string, error) {
 
 	t, err := getSecret(config.SecretService.TokenPath, secretType)
 	if err != nil {
@@ -94,7 +96,7 @@ func getCertKeyPair(config *tomlConfig, secretBaseURL string, c *http.Client, se
 	return collection.Section.Cert, collection.Section.Key, nil
 }
 
-func certKeyPairInStore(config *tomlConfig, secretBaseURL string, c *http.Client, secretType SecretReader) (bool, error) {
+func certKeyPairInStore(config *tomlConfig, secretBaseURL string, c *http.Client, secretType secret.SecretReader) (bool, error) {
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return false, err

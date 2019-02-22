@@ -19,13 +19,15 @@ package main
 
 import (
 	"encoding/json"
+
+	"github.com/edgexfoundry/security-secret-store/core/internal/secret"
 )
 
 type Secret struct {
 	Token string `json:"root_token"`
 }
 
-func getSecret(filename string, secretType SecretReader) (Secret, error) {
+func getSecret(filename string, secretType secret.SecretReader) (Secret, error) {
 	// unseal the secrets (like master key and root token) that are used to unlock the vault
 	raw, unsealErr := secretType.UnsealVaultSecrets(filename)
 
