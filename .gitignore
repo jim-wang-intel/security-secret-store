@@ -11,6 +11,7 @@ core/*.exe
 core/edgex-vault-worker
 pkisetup/pkisetup
 parentHndl
+core/res/secrets/vault-secrets
 core/res/secrets/*.prv
 core/res/secrets/*.pub
 core/vaultmock

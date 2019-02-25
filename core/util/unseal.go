@@ -88,9 +88,8 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 		}()
 		log.Printf("Successfully loaded sealed data into TPM with parent handle: 0x%x, and got the object handle: 0x%x\n", parentHdl, objHandle)
 
-		objectPwd := "test"
-		pcr := 0
-		unsealedBytes, unsealErr := unsealData(rw, objHandle, pcr, objectPwd)
+		objectPwd := emptyPassword
+		unsealedBytes, unsealErr := unsealData(rw, objHandle, objectPwd)
 		if unsealErr != nil {
 			return "", unsealErr
 		}
@@ -101,8 +100,8 @@ func Unseal(tpmDev *TPMDevice, unsealInput UnsealInput) (unsealedData string, un
 	return unsealedData, nil
 }
 
-func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, pcr int, objectPwd string) (data []byte, retErr error) {
-	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw, pcr)
+func unsealData(rw io.ReadWriter, objHandle tpmutil.Handle, objectPwd string) (data []byte, retErr error) {
+	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw)
 	defer func() {
 		if flushErr := FlushSessionHandle(rw, sessionHandle); flushErr != nil {
 			log.Printf("%v\n", flushErr)

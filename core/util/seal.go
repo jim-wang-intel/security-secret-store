@@ -161,7 +161,6 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 
 	// load the parent handle and object handle from the file
 	parentHandleFileName := GetTPMParentHandleFileName(outputblobFilePath)
-	//clearTpmHandles(rw, tpmHandleFiles)
 
 	ownerPwd := emptyPassword
 	srkPwd := emptyPassword
@@ -204,17 +203,7 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		log.Printf("error on os stat parent handle: %v\n", err)
 	}
 
-	// read PCR for binding with policy in the session
-	// here we just tempoararily use 0 value to start with
-	// as we do not enforce the PCR binding for this time
-	pcr := 0
-	pcrVal, pcrErr := tpm2.ReadPCR(rw, pcr, tpm2.AlgSHA256)
-	if pcrErr != nil {
-		log.Printf("unable to read PCR: %v\n", pcrErr)
-	}
-	log.Printf("PCR %v value: 0x%x\n", pcr, pcrVal)
-
-	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw, pcr)
+	sessionHandle, policy, sessionPolicyGetErr := GetSimpleSessionPolicyWithPCR(rw)
 	if policy == nil || sessionPolicyGetErr != nil {
 		return sessionPolicyGetErr
 	}
@@ -226,7 +215,8 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 		log.Printf("sessionHandle 0x%x has been flushed\n", sessionHandle)
 	}()
 
-	objectPwd := "test"
+	// no password required
+	objectPwd := emptyPassword
 	sealPrivate, sealPublic, sealErr := tpm2.Seal(rw, parentHandle, srkPwd, objectPwd, policy, secretInputBytes)
 	if sealErr != nil {
 		return sealErr
@@ -246,7 +236,7 @@ func Seal(tpmDev *TPMDevice, sealInput SealInput) error {
 // the first return is sessionHandle,
 // the second return is policy digest associated with it from TPM
 // the third return is error if any
-func GetSimpleSessionPolicyWithPCR(rw io.ReadWriter, pcr int) (tpmutil.Handle, []byte, error) {
+func GetSimpleSessionPolicyWithPCR(rw io.ReadWriter) (tpmutil.Handle, []byte, error) {
 	sessionHandle, _, sessionErr := tpm2.StartAuthSession(
 		rw,
 		tpm2.HandleNull,  /*tpmKey*/
@@ -267,7 +257,8 @@ func GetSimpleSessionPolicyWithPCR(rw io.ReadWriter, pcr int) (tpmutil.Handle, [
 
 	pcrSelection := tpm2.PCRSelection{
 		Hash: tpm2.AlgSHA256,
-		PCRs: []int{pcr},
+		// nil PCRs for now
+		PCRs: nil,
 	}
 	if policyPCRErr := tpm2.PolicyPCR(rw, sessionHandle, nil /*expectedGigest*/, pcrSelection); policyPCRErr != nil {
 		log.Printf("unable to bind PCRs to auth policy: %v\n", policyPCRErr)
