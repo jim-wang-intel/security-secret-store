@@ -13,7 +13,7 @@ pkisetup/pkisetup
 parentHndl
 core/res/secrets/*.prv
 core/res/secrets/*.pub
+core/vaultmock
 core/internal/secret/vaultmock
 core/internal/secret/*.prv
 core/internal/secret/*.pub
-

@@ -48,7 +48,7 @@ func main() {
 
 	useConsul := flag.Bool("consul", false, "retrieve configuration from consul server")
 	initNeeded := flag.Bool("init", false, "run init procedure for security service.")
-	insecureSkipVerify := flag.Bool("insureSkipVerify", true, "skip server side SSL verification, mainly for self-signed cert.")
+	insecureSkipVerify := flag.Bool("insureskipverify", true, "skip server side SSL verification, mainly for self-signed cert.")
 	configFileLocation := flag.String("configfile", "res/configuration.toml", "configuration file")
 	waitInterval := flag.Int("wait", 30, "time to wait between checking the vault status in seconds.")
 

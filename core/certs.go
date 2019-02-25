@@ -45,7 +45,6 @@ type CertInfo struct {
 }
 
 func loadKongCerts(config *tomlConfig, url string, secretBaseURL string, c *http.Client) error {
-	//
 	var secretType secret.SecretHandler
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
