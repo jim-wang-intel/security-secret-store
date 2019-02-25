@@ -25,7 +25,7 @@ import (
 
 func TestNewSecretPlainType(t *testing.T) {
 
-	secretType := "plain"
+	secretType := "plaintext"
 	expectedType := secret.PlainText{}
 
 	createdType := NewSecretType(secretType)

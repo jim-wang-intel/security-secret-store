@@ -11,6 +11,6 @@ import:
 - package: github.com/google/go-tpm
   version: master
 - package: github.com/edgexfoundry/edgex-go
-  version: master
+  version: v0.7.1
   subpackages:
   - pkg/clients/logging
