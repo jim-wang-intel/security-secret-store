@@ -102,7 +102,7 @@ services:
     image: edgexfoundry/docker-edgex-vault-worker-go:latest
     container_name: edgex-vault-worker
     hostname: edgex-vault-worker
-    command: ["--init=true", "--wait=30", "--insecureSkipVerify=false"]
+    command: ["--init=true", "--wait=30", "--insureSkipVerify=false"]
     networks:
       - edgex-network
     devices:

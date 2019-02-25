@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
+ * Copyright 2019 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -28,7 +29,7 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-func initVault(c *api.Sys, path string, inited bool, secretType secret.SecretReader) (string, error) {
+func initVault(c *api.Sys, path string, inited bool, secretType secret.SecretHandler) (string, error) {
 
 	if inited == false {
 		ir := &api.InitRequest{
@@ -81,7 +82,7 @@ func unsealVault(c *api.Sys, token string) (bool, error) {
 	return resp.Sealed, err
 }
 
-func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, secretType secret.SecretReader) (bool, error) {
+func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, secretType secret.SecretHandler) (bool, error) {
 	cert, key, err := getCertKeyPair(config, secretBaseURL, c, secretType)
 	if err != nil {
 		return false, err
@@ -99,13 +100,12 @@ func checkProxyCerts(config *tomlConfig, secretBaseURL string, c *http.Client, s
             --data @${_PAYLOAD_KONG} \
             http://localhost:8200/v1/secret/edgex/pki/tls/edgex-kong
 */
-func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client, secretType secret.SecretReader) (bool, error) {
+func uploadProxyCerts(config *tomlConfig, secretBaseURL string, cert string, sk string, c *http.Client, secretType secret.SecretHandler) (bool, error) {
 	body := &CertPair{
 		Cert: cert,
 		Key:  sk,
 	}
 
-	// TODO (just a note--thinking this is Kong Cert)
 	t, err := getSecret(config.SecretService.TokenPath, secretType)
 	if err != nil {
 		lc.Error(err.Error())

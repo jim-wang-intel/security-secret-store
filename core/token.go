@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2018 Dell Inc.
+ * Copyright 2019 Intel Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -27,7 +28,7 @@ type Secret struct {
 	Token string `json:"root_token"`
 }
 
-func getSecret(filename string, secretType secret.SecretReader) (Secret, error) {
+func getSecret(filename string, secretType secret.SecretHandler) (Secret, error) {
 	// unseal the secrets (like master key and root token) that are used to unlock the vault
 	raw, unsealErr := secretType.UnsealVaultSecrets(filename)
 

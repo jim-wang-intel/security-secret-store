@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2019 Intel Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package main
 
 import (
@@ -30,7 +48,7 @@ func main() {
 
 	useConsul := flag.Bool("consul", false, "retrieve configuration from consul server")
 	initNeeded := flag.Bool("init", false, "run init procedure for security service.")
-	insecureSkipVerify := flag.Bool("insecureSkipVerify", true, "skip server side SSL verification, mainly for self-signed cert.")
+	insecureSkipVerify := flag.Bool("insureSkipVerify", true, "skip server side SSL verification, mainly for self-signed cert.")
 	configFileLocation := flag.String("configfile", "res/configuration.toml", "configuration file")
 	waitInterval := flag.Int("wait", 30, "time to wait between checking the vault status in seconds.")
 
@@ -82,8 +100,6 @@ func main() {
 		Address:    secretServiceBaseURL,
 		HttpClient: client,
 	})
-
-	// system handle for vault APIs
 	s := a.Sys()
 	inited := false
 	sealed := true
@@ -95,7 +111,6 @@ func main() {
 		if err != nil {
 			lc.Error(fmt.Sprintf("Error while checking the initialization status: %s", err.Error()))
 		} else {
-
 			k, err := initVault(s, config.SecretService.TokenPath, inited, secretType)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Error while initializing the vault with info: %s", err.Error()))
@@ -206,7 +221,6 @@ func main() {
 	}
 	lc.Info("Cert&key are not in the secret store yet, will need to upload them.")
 
-	// TODO secure this ..
 	cert, sk, err := loadCertKeyPair(config.SecretService.CertFilePath, config.SecretService.KeyFilePath)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Failed to load cert&key pair from volume with path of cert - %s, key - %s.", config.SecretService.CertFilePath, config.SecretService.KeyFilePath))
