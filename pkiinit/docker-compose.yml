@@ -46,7 +46,7 @@ services:
     networks:
       - edgex-network
     volumes:
-      - pki-init-config:/usr/local/etc/degex/pki
+      - pki-init-config:/usr/local/etc/edgex/pki
       - consul-config:/consul/config
       - vault-config:/vault/config
       - /run/edgex/secrets:/run/edgex/secrets
