@@ -15,4 +15,4 @@ For running in Docker, please build the binaries and docker images before run `d
 
 ## Run Docker
 
-On the command line console, run `docker-compose up --build` to start the whole Docker container stack.
+On the command line console, run `docker-compose up --build` from the directory `pkiinit` to start the whole Docker container stack.
