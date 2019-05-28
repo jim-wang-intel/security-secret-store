@@ -3,7 +3,7 @@
 .PHONY: prepare build clean docker run
 
 GO=CGO_ENABLED=0 GO111MODULE=on GOOS=linux go
-DOCKERS=docker_vault docker_vault_worker
+DOCKERS=docker_pki_init docker_vault docker_vault_worker
 PKISETUP=pkisetup
 VAULTWORKER=edgex-vault-worker
 .PHONY: $(DOCKERS)
@@ -27,6 +27,16 @@ build_worker:
 
 docker: $(DOCKERS)
 
+docker_pki_init: 
+	docker build \
+        --no-cache=true --rm=true \
+		-f ./pkiinit/Dockerfile \
+		--label "git_sha=$(GIT_SHA)" \
+		-t edgexfoundry/docker-edgex-pki-init:$(GIT_SHA) \
+		-t edgexfoundry/docker-edgex-pki-init:$(VERSION)-dev \
+		-t edgexfoundry/docker-edgex-pki-init:latest \
+		./pkiinit/
+
 docker_vault: build_pki
 	docker build \
         --no-cache=true --rm=true \
@@ -46,4 +56,3 @@ docker_vault_worker: build_worker
 		-t edgexfoundry/docker-edgex-vault-worker-go:$(VERSION)-dev \
 		-t edgexfoundry/docker-edgex-vault-worker-go:latest \
 		.
-
