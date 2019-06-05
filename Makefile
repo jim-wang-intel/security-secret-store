@@ -4,6 +4,7 @@
 
 GO=CGO_ENABLED=0 GO111MODULE=on GOOS=linux go
 DOCKERS=docker_pki_init docker_vault docker_vault_worker
+PKIINIT=pki-init
 PKISETUP=pkisetup
 VAULTWORKER=edgex-vault-worker
 .PHONY: $(DOCKERS)
@@ -16,8 +17,12 @@ prepare:
 clean:
 	cd cmd/vaultworker && rm -f $(VAULTWORKER)
 	cd cmd/pkisetup && rm -f $(PKISETUP)
+	cd pkiinit && rm -f $(PKIINIT)
 
-build: build_pki build_worker
+build: build_pki_init build_pki build_worker
+
+build_pki_init:
+	cd pkiinit && $(GO) build -a -o $(PKIINIT) .
 
 build_pki:
 	cd cmd/pkisetup && $(GO) build -a -ldflags="-s -w" -o $(PKISETUP) .
@@ -27,7 +32,7 @@ build_worker:
 
 docker: $(DOCKERS)
 
-docker_pki_init: 
+docker_pki_init: build_pki_init
 	docker build \
         --no-cache=true --rm=true \
 		-f ./pkiinit/Dockerfile \
