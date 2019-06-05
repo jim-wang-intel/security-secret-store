@@ -1,4 +1,5 @@
 # EdgeX Foundry Security Public Key Infrastructure (PKI) Init Service
+
 [![license](https://img.shields.io/badge/license-Apache%20v2.0-blue.svg)](LICENSE)
 
 ## Introduction
@@ -12,7 +13,14 @@ For running in Docker, please build the binaries and docker images before run `d
 1. In the base directory, run `make build`
 2. In the base directory, run `make docker`
 
-
 ## Run Docker
 
 On the command line console, run `docker-compose up --build` from the directory `pkiinit` to start the whole Docker container stack.
+
+## Command Line Options
+
+> * --generate: to genearte new TLS certificates
+> * --import: to deploy TLS cetificates from cached area
+> * --cache: generate fresh TLS certificates with erase of CA keys and put into cached area
+> * --cacheca: generate fresh TLS certificates with no erase of CA keys and put into cached area
+> * --help or -h: help message for the pki-init options

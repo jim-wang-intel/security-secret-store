@@ -23,9 +23,12 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 RUN set -eux; \
     apk add --no-cache ca-certificates dumb-init
 
-# setup / install the executable (binary or shell)
-COPY pki-init.sh pki-init.sh
-RUN chmod +x pki-init.sh
+RUN mkdir -p /edgex/pkiinit
+
+WORKDIR /edgex
+
+# setup / install the executable
+COPY pki-init pkiinit/pki-init
 
 # setup the entry point script
 # it uses `dumb-init` as the top-level process to reap any
@@ -36,4 +39,4 @@ RUN ln -s usr/local/bin/docker-entrypoint.sh /  # backwards compatability
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-CMD ["./pki-init.sh"]
+CMD ["/edgex/pkiinit/pki-init", "-h"]

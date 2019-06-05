@@ -13,4 +13,6 @@ go.sum
 core/*.log
 core/*.exe
 core/edgex-vault-worker
+pkiinit/pkiinit
+pkiinit/pki-init
 pkisetup/pkisetup
