@@ -45,6 +45,8 @@ services:
     hostname: edgex-pki-init
     networks:
       - edgex-network
+    tmpfs:
+      - /run
     volumes:
       - pki-init-config:/usr/local/etc/edgex/pki
       - consul-config:/consul/config

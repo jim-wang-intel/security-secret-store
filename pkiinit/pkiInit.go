@@ -18,51 +18,75 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
+
+	"github.com/edgexfoundry/security-secret-store/pkiinit/option"
 )
 
 type exit interface {
 	callExit(int)
 }
 
-type exitCode struct {
-	exit
+type exitCode struct{}
+
+type optionDispatcher interface {
+	run() (int, error)
 }
 
-var exitInstance = newExit(&exitCode{})
+type pkiInitOptionDispatcher struct{}
+
+var exitInstance = newExit()
+var dispatcherInstance = newOptionDispatcher()
+var helpOpt bool
+var generateOpt bool
+
+func init() {
+	// define and register command line flags:
+	flag.BoolVar(&helpOpt, "h", false, "help message")
+	flag.BoolVar(&helpOpt, "help", false, "help message")
+	flag.BoolVar(&generateOpt, "generate", false, "to generate a new PKI from scratch")
+}
 
 func main() {
-	var helpOpt bool
-	// only help option for this phase
-	if flag.Lookup("h") == nil {
-		// only register once if it is empty
-		// to prevent "redefined flag error"
-		flag.BoolVar(&helpOpt, "h", false, "help message")
-		flag.BoolVar(&helpOpt, "help", false, "help message")
-	}
-
 	flag.Parse()
 
-	var statusCode int
 	if helpOpt {
 		// as specified in the requirement, help option terminates with 0 exit status
 		flag.Usage()
-		statusCode = 0
-	} else {
-		if len(os.Args) < 2 {
-			fmt.Println("Please specify option for pki-init.")
-			flag.Usage()
-			statusCode = 1
-		}
+		exitInstance.callExit(0)
+		return
+	}
+
+	if len(os.Args) < 2 {
+		fmt.Println("Please specify option for pki-init.")
+		flag.Usage()
+		exitInstance.callExit(1)
+		return
+	}
+
+	statusCode, err := dispatcherInstance.run()
+
+	if err != nil {
+		log.Println(err)
 	}
 
 	exitInstance.callExit(statusCode)
 }
 
-func newExit(exit exit) exit {
-	return &exitCode{exit: exit}
+func newExit() exit {
+	return &exitCode{}
+}
+
+func newOptionDispatcher() optionDispatcher {
+	return &pkiInitOptionDispatcher{}
 }
 
 func (code *exitCode) callExit(statusCode int) {
 	os.Exit(statusCode)
+}
+
+func (dispatcher *pkiInitOptionDispatcher) run() (statusCode int, err error) {
+	pkiInitOption := option.NewPkiInitOption(generateOpt)
+	return pkiInitOption.ProcessOptions()
 }

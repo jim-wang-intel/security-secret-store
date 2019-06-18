@@ -20,3 +20,4 @@ internal/pki/pkisetup/testconfig/*.*
 pkiinit/pkiinit
 pkiinit/pki-init
 pkisetup/pkisetup
+pkisetup/config/

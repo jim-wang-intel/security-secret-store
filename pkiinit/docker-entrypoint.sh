@@ -23,4 +23,13 @@ set -e
 # all processes in its session. This can alleviate the chance of leaking zombies, 
 # thus more graceful termination of all sub-processes if any.
 
+# runtime directory is set per user:
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(echo $(id -u))}
+
+PKI_INIT_RUNTIME_DIR=${XDG_RUNTIME_DIR}${PKI_INIT_DIR}
+
+# debug output:
+echo XDG_RUNTIME_DIR $XDG_RUNTIME_DIR
+echo PKI_INIT_RUNTIME_DIR $PKI_INIT_RUNTIME_DIR
+
 exec "$@"
