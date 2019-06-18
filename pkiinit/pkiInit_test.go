@@ -16,6 +16,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -23,39 +24,105 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHelpOption(t *testing.T) {
-	exitInstance = newTestExit(&testExitCode{})
-	runWithHelpOption()
-	assert.Equal(t, 0, (exitInstance.(*testExitCode)).getStatusCode())
-}
+var hasDispatchError bool
 
 func TestNoOption(t *testing.T) {
-	exitInstance = newTestExit(&testExitCode{})
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
 	runWithNoOption()
-	assert.Equal(t, 1, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(1, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(false, generateOpt)
+}
+
+func TestHelpOption(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithHelpOption()
+	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(true, helpOpt)
+	assert.Equal(false, generateOpt)
+}
+
+func TestGenerateOptionOk(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithGenerateOption(false)
+	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(true, generateOpt)
+}
+
+func TestGenerateOptionWithRunError(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithGenerateOption(true)
+	assert.Equal(2, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(true, generateOpt)
+}
+
+func setupTest(t *testing.T) func(t *testing.T, args []string) {
+	exitInstance = newTestExit()
+	dispatcherInstance = newTestDispatcher()
+	return func(t *testing.T, args []string) {
+		// reset after each test
+		helpOpt = false
+		generateOpt = false
+		hasDispatchError = false
+		os.Args = args
+	}
 }
 
 func runWithNoOption() {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
 	// case 1: no option given
 	os.Args = []string{"cmd"}
+	printCommandLineStrings(os.Args)
 	main()
 }
 
 func runWithHelpOption() {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
 	// case 2: h or help option given
 	os.Args = []string{"cmd", "-help"}
+	printCommandLineStrings(os.Args)
 	main()
 }
 
+func runWithGenerateOption(hasError bool) {
+	// case 3: generate option given
+	os.Args = []string{"cmd", "-generate"}
+	printCommandLineStrings(os.Args)
+	hasDispatchError = hasError
+	main()
+}
+
+func printCommandLineStrings(strs []string) {
+	fmt.Print("command line strings: ")
+	for _, str := range strs {
+		fmt.Print(str)
+		fmt.Print(" ")
+	}
+	fmt.Println()
+}
+
 type testExitCode struct {
-	exitCode
 	testStatusCode int
+}
+
+func newTestExit() exit {
+	return &testExitCode{}
 }
 
 func (testExit *testExitCode) callExit(statusCode int) {
@@ -67,6 +134,18 @@ func (testExit *testExitCode) getStatusCode() int {
 	return testExit.testStatusCode
 }
 
-func newTestExit(exit exit) exit {
-	return &testExitCode{}
+type testPkiInitOptionDispatcher struct {
+}
+
+func newTestDispatcher() optionDispatcher {
+	return &testPkiInitOptionDispatcher{}
+}
+
+func (testDispatcher *testPkiInitOptionDispatcher) run() (statusCode int, err error) {
+	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v\n", helpOpt, generateOpt)
+	if hasDispatchError {
+		statusCode = 2
+		err = errors.New("dispatch error found")
+	}
+	return statusCode, err
 }

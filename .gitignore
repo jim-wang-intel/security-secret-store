@@ -16,3 +16,4 @@ core/edgex-vault-worker
 pkiinit/pkiinit
 pkiinit/pki-init
 pkisetup/pkisetup
+pkisetup/config/

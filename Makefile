@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0'
 
-.PHONY: prepare build clean docker run
+.PHONY: prepare build clean docker run test
 
 GO=CGO_ENABLED=0 GO111MODULE=on GOOS=linux go
 DOCKERS=docker_pki_init docker_vault docker_vault_worker
@@ -19,12 +19,12 @@ clean:
 	cd pkisetup && rm -f $(PKISETUP)
 	cd pkiinit && rm -f $(PKIINIT)
 
-build: build_pki_init build_pki build_worker
+build: build_pki_init build_pki_setup build_worker
 
 build_pki_init:
 	cd pkiinit && $(GO) build -a -o $(PKIINIT) .
 
-build_pki:
+build_pki_setup:
 	cd pkisetup && $(GO) build -a -ldflags="-s -w" -o $(PKISETUP) .
 
 build_worker:
@@ -32,17 +32,17 @@ build_worker:
 
 docker: $(DOCKERS)
 
-docker_pki_init: build_pki_init
+docker_pki_init: build_pki_init build_pki_setup
 	docker build \
         --no-cache=true --rm=true \
-		-f ./pkiinit/Dockerfile \
+		-f Dockerfile.pki-init \
 		--label "git_sha=$(GIT_SHA)" \
 		-t edgexfoundry/docker-edgex-pki-init:$(GIT_SHA) \
 		-t edgexfoundry/docker-edgex-pki-init:$(VERSION)-dev \
 		-t edgexfoundry/docker-edgex-pki-init:latest \
-		./pkiinit/
+		.
 
-docker_vault: build_pki
+docker_vault: build_pki_setup
 	docker build \
         --no-cache=true --rm=true \
 		-f Dockerfile.vault \
@@ -61,3 +61,11 @@ docker_vault_worker: build_worker
 		-t edgexfoundry/docker-edgex-vault-worker-go:$(VERSION)-dev \
 		-t edgexfoundry/docker-edgex-vault-worker-go:latest \
 		.
+
+test: 
+		$(GO) test ./... -cover
+		$(GO) vet ./...
+		
+# address this later in a separate issue and PR
+# gofmt -l . 
+# [ "`gofmt -l .`" = "" ]
