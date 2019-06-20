@@ -24,30 +24,81 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewPkiInitOption(t *testing.T) {
+func TestNewPkiInitOption_GenerateOnly(t *testing.T) {
 	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+	}
 	// generate option given
-	generateOn := NewPkiInitOption(true)
+	generateOn, _, _ := NewPkiInitOption(options)
 	assert.NotNil(generateOn)
-	assert.Equal(true, generateOn.(*PkiInitOption).generateOpt)
+	assert.Equal(true, generateOn.(*PkiInitOption).GenerateOpt)
+
 	// generate option omitted
-	generateOff := NewPkiInitOption(false)
+	options.GenerateOpt = false
+	generateOff, _, _ := NewPkiInitOption(options)
 	assert.NotNil(generateOff)
-	assert.Equal(false, generateOff.(*PkiInitOption).generateOpt)
+	assert.Equal(false, generateOff.(*PkiInitOption).GenerateOpt)
 }
 
+func TestNewPkiInitOption_ImportOnly(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt: true,
+	}
+	// import option given
+	optionsExecutor, _, _ := NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(true, optionsExecutor.(*PkiInitOption).ImportOpt)
+
+	// import option omitted
+	options.ImportOpt = false
+	optionsExecutor, _, _ = NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(false, optionsExecutor.(*PkiInitOption).ImportOpt)
+}
+
+func TestNewPkiInitOption_ImportAndGenerate(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   true,
+	}
+	// import and generate option given
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func getMockArguments() []interface{} {
+	var ifc []interface{}
+
+	// for generate opt
+	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+	// for import opt
+	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+
+	return ifc
+}
 func TestProcessOptionNormal(t *testing.T) {
 	testExecutor := &mockOptionsExecutor{}
 	// normal case
-	testExecutor.On("executeOptions", mock.AnythingOfTypeArgument(
-		"func(*option.PkiInitOption) (option.exitCode, error)")).
+	testExecutor.On("executeOptions", getMockArguments()...).
 		Return(normal, nil).Once()
 
 	assert := assert.New(t)
 
-	generateOn := NewPkiInitOption(true)
-	generateOn.(*PkiInitOption).executor = testExecutor
-	exitCode, err := generateOn.ProcessOptions()
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   false,
+	}
+	optsExecutor, _, _ := NewPkiInitOption(options)
+	optsExecutor.(*PkiInitOption).executor = testExecutor
+	exitCode, err := optsExecutor.ProcessOptions()
 	assert.Equal(normal.intValue(), exitCode)
 	assert.Nil(err)
 
@@ -58,13 +109,16 @@ func TestProcessOptionError(t *testing.T) {
 	testExecutor := &mockOptionsExecutor{}
 	generateErr := errors.New("failed to execute generate")
 	// error case
-	testExecutor.On("executeOptions", mock.AnythingOfTypeArgument(
-		"func(*option.PkiInitOption) (option.exitCode, error)")).
+	testExecutor.On("executeOptions", getMockArguments()...).
 		Return(exitWithError, generateErr).Once()
 
 	assert := assert.New(t)
 
-	generateOn := NewPkiInitOption(true)
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   false,
+	}
+	generateOn, _, _ := NewPkiInitOption(options)
 	generateOn.(*PkiInitOption).executor = testExecutor
 	exitCode, err := generateOn.ProcessOptions()
 	assert.Equal(exitWithError.intValue(), exitCode)
@@ -77,13 +131,17 @@ func TestExecuteOption(t *testing.T) {
 	testExecutor := &mockOptionsExecutor{}
 	assert := assert.New(t)
 
-	generateOn := NewPkiInitOption(true)
+	options := PkiInitOption{
+		GenerateOpt: true,
+	}
+	generateOn, _, _ := NewPkiInitOption(options)
 	generateOn.(*PkiInitOption).executor = testExecutor
 	exitCode, err := generateOn.executeOptions(mockGenerate())
 	assert.Equal(normal, exitCode)
 	assert.Nil(err)
 
-	generateOff := NewPkiInitOption(false)
+	options.GenerateOpt = false
+	generateOff, _, _ := NewPkiInitOption(options)
 	generateOff.(*PkiInitOption).executor = testExecutor
 	exitCode, err = generateOff.executeOptions(mockGenerate())
 	assert.Equal(normal, exitCode)
