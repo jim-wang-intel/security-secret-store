@@ -37,6 +37,7 @@ services:
       - log-data:/edgex/logs
       - consul-config:/consul/config
       - consul-data:/consul/data
+      - pki-init-config:/etc/edgex/pki
 
   # new pki-init service section
   pki-init:
@@ -48,7 +49,7 @@ services:
     tmpfs:
       - /run
     volumes:
-      - pki-init-config:/usr/local/etc/edgex/pki
+      - pki-init-config:/etc/edgex/pki
       - consul-config:/consul/config
       - vault-config:/vault/config
       - /run/edgex/secrets:/run/edgex/secrets
