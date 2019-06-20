@@ -22,6 +22,8 @@ const (
 	pkiInitExecutable  = "pki-init"
 	pkiSetupVaultJSON  = "pkisetup-vault.json"
 	envXdgRuntimeDir   = "XDG_RUNTIME_DIR"
+	envPkiCache        = "PKI_CACHE"
+	defaultPkiCacheDir = "/etc/edgex/pki"
 	pkiInitBaseDir     = "/edgex/pki-init"
 	tlsSceretFileName  = "server.key"
 	tlsCertFileName    = "server.crt"

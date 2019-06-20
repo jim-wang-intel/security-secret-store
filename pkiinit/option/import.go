@@ -15,6 +15,14 @@
 //
 package option
 
+import (
+	"io"
+	"log"
+	"os"
+
+	"github.com/fsnotify/fsnotify"
+)
+
 // Import option....
 func Import() func(*PkiInitOption) (exitCode, error) {
 	return func(pkiInitOpton *PkiInitOption) (exitCode, error) {
@@ -32,6 +40,91 @@ func isImportNoOp(pkiInitOption *PkiInitOption) bool {
 	return pkiInitOption == nil || !pkiInitOption.ImportOpt
 }
 
-func importPkis() (exitCode, error) {
-	return normal, nil
+func importPkis() (statusCode exitCode, err error) {
+	pkiCacheDir := getPkiCacheDirEnv()
+	log.Printf("PKI_CACHE: %s", pkiCacheDir)
+
+	dirEmpty, err := isDirEmpty(pkiCacheDir)
+
+	if err != nil {
+		return exitWithError, err
+	}
+
+	destDir := "/run/edgex/secrets"
+
+	if dirEmpty {
+
+		pkiCacheWatcher, newErr := fsnotify.NewWatcher()
+
+		if newErr != nil {
+			return exitWithError, newErr
+		}
+		defer pkiCacheWatcher.Close()
+
+		done := make(chan bool)
+
+		go func() {
+			for {
+				select {
+				case event := <-pkiCacheWatcher.Events:
+					log.Printf("watcher event: %#v\n", event)
+					err = deploy(pkiCacheDir, destDir)
+					if err != nil {
+						statusCode = exitWithError
+					} else {
+						statusCode = normal
+					}
+					done <- true
+				case watcherErr := <-pkiCacheWatcher.Errors:
+					log.Printf("watcher error: %v\n", err)
+					statusCode = exitWithError
+					err = watcherErr
+					done <- true
+				}
+			}
+		}()
+
+		if err := pkiCacheWatcher.Add(pkiCacheDir); err != nil {
+			return exitWithError, err
+		}
+
+		<-done
+	} else {
+		// copy stuff into dest dir from pkiCache
+		err = deploy(pkiCacheDir, destDir)
+		if err != nil {
+			statusCode = exitWithError
+		}
+	}
+
+	return statusCode, err
+}
+
+func deploy(srcDir, destDir string) error {
+	return nil
+}
+
+func getPkiCacheDirEnv() string {
+	pkiCacheDir := os.Getenv(envPkiCache)
+	if pkiCacheDir == "" {
+		return defaultPkiCacheDir
+	}
+	return pkiCacheDir
+}
+
+func isDirEmpty(dir string) (empty bool, err error) {
+	handle, err := os.Open(dir)
+	if err != nil {
+		return empty, err
+	}
+	defer handle.Close()
+
+	_, err = handle.Readdir(1)
+	if err == io.EOF {
+		// EOF error means the dir is empty
+		empty = true
+		err = nil
+	}
+
+	return empty, err
 }

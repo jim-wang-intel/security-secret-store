@@ -16,16 +16,26 @@
 package option
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestImport(t *testing.T) {
+func TestImportPriorFileChange(t *testing.T) {
+	var exitStatus exitCode
+	var err error
+	// put some test file into the current dir to trigger event
+	curDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
+	}
+	testFile := filepath.Join(curDir, "testFile")
 	tearDown := setupImportTest(t)
-	defer tearDown(t)
+	defer tearDown(t, testFile)
 
 	options := PkiInitOption{
 		ImportOpt: true,
@@ -34,72 +44,110 @@ func TestImport(t *testing.T) {
 	importOn.(*PkiInitOption).executor = testExecutor
 
 	f := Import()
-	exitCode, err := f(importOn.(*PkiInitOption))
+
+	go func() {
+		exitStatus, err = f(importOn.(*PkiInitOption))
+	}()
+
+	time.Sleep(time.Second)
+
+	testData := []byte("test data\n")
+	if err := ioutil.WriteFile(testFile, testData, 0644); err != nil {
+		t.Fatalf("cannot write testData to direcotry %s: %v", curDir, err)
+	}
+
+	assert := assert.New(t)
+	assert.Equal(normal, exitStatus)
+	assert.Nil(err)
+}
+
+func TestImportPostFileChange(t *testing.T) {
+	var exitStatus exitCode
+	var err error
+	// put some test file into the current dir to trigger event
+	curDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
+	}
+	testFile := filepath.Join(curDir, "testFile")
+	tearDown := setupImportTest(t)
+	defer tearDown(t, testFile)
+
+	// put some test file into the current dir to trigger event
+	curDir, err = os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
+	}
+
+	testData := []byte("test data\n")
+	if err := ioutil.WriteFile(filepath.Join(curDir, "testFile"), testData, 0644); err != nil {
+		t.Fatalf("cannot write testData to direcotry %s: %v", curDir, err)
+	}
+
+	options := PkiInitOption{
+		ImportOpt: true,
+	}
+	importOn, _, _ := NewPkiInitOption(options)
+	importOn.(*PkiInitOption).executor = testExecutor
+
+	f := Import()
+
+	exitStatus, err = f(importOn.(*PkiInitOption))
+
+	time.Sleep(time.Second)
+
+	assert := assert.New(t)
+	assert.Equal(normal, exitStatus)
+	assert.Nil(err)
+}
+
+func TestImportOff(t *testing.T) {
+	tearDown := setupImportTest(t)
+	defer tearDown(t, "")
+
+	options := PkiInitOption{
+		ImportOpt: false,
+	}
+	importOff, _, _ := NewPkiInitOption(options)
+	importOff.(*PkiInitOption).executor = testExecutor
+	exitCode, err := importOff.executeOptions(Import())
 
 	assert := assert.New(t)
 	assert.Equal(normal, exitCode)
 	assert.Nil(err)
 }
 
-// func TestGenerateWithPkiSetupMissing(t *testing.T) {
-// 	pkisetupLocal = false // this will lead to pkisetup binary missing
-// 	vaultJSONPkiSetupExist = true
-// 	tearDown := setupImportTest(t)
-// 	defer tearDown(t)
+func TestIsDirEmpty(t *testing.T) {
+	assert := assert.New(t)
+	_, err := isDirEmpty("/non/existing/dir/")
 
-// 	options := PkiInitOption{
-// 		GenerateOpt: true,
-// 	}
-// 	generateOn, _, _ := NewPkiInitOption(options)
-// 	generateOn.(*PkiInitOption).executor = testExecutor
+	assert.NotNil(err)
 
-// 	f := Generate()
-// 	exitCode, err := f(generateOn.(*PkiInitOption))
+	// put some test file into the current dir to trigger event
+	curDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
+	}
+	empty, err := isDirEmpty(curDir)
+	assert.Nil(err)
+	assert.False(empty)
 
-// 	assert := assert.New(t)
-// 	assert.Equal(exitWithError, exitCode)
-// 	assert.NotNil(err)
-// }
+	// create an empty temp dir
+	tempDir, err := ioutil.TempDir(curDir, "test")
+	if err != nil {
+		t.Fatalf("cannot create the temporary dir %s: %v", tempDir, err)
+	}
+	empty, err = isDirEmpty(tempDir)
+	defer func() {
+		// remove tempDir:
+		os.RemoveAll(tempDir)
+	}()
 
-// func TestGenerateWithVaultJSONPkiSetupMissing(t *testing.T) {
-// 	pkisetupLocal = true
-// 	vaultJSONPkiSetupExist = false // this will lead to missing json
-// 	tearDown := setupImportTest(t)
-// 	defer tearDown(t)
+	assert.Nil(err)
+	assert.True(empty)
+}
 
-// 	options := PkiInitOption{
-// 		GenerateOpt: true,
-// 	}
-// 	generateOn, _, _ := NewPkiInitOption(options)
-// 	generateOn.(*PkiInitOption).executor = testExecutor
-
-// 	f := Generate()
-// 	exitCode, err := f(generateOn.(*PkiInitOption))
-
-// 	assert := assert.New(t)
-// 	assert.Equal(exitWithError, exitCode)
-// 	assert.NotNil(err)
-// }
-
-// func TestGenerateOff(t *testing.T) {
-// 	pkisetupLocal = true
-// 	vaultJSONPkiSetupExist = true
-// 	tearDown := setupImportTest(t)
-// 	defer tearDown(t)
-
-// 	options := PkiInitOption{
-// 		GenerateOpt: false,
-// 	}
-// 	generateOff, _, _ := NewPkiInitOption(options)
-// 	generateOff.(*PkiInitOption).executor = testExecutor
-// 	exitCode, err := generateOff.executeOptions(Generate())
-
-// 	assert := assert.New(t)
-// 	assert.Equal(normal, exitCode)
-// 	assert.Nil(err)
-// }
-
-func setupImportTest(t *testing.T) func(t *testing.T) {
+func setupImportTest(t *testing.T) func(t *testing.T, testFile string) {
 	testExecutor = &mockOptionsExecutor{}
 	curDir, err := os.Getwd()
 	if err != nil {
@@ -107,13 +155,17 @@ func setupImportTest(t *testing.T) func(t *testing.T) {
 	}
 
 	origEnvXdgRuntimeDir := os.Getenv(envXdgRuntimeDir)
-	fmt.Println("Env XDG_RUNTIME_DIR: ", origEnvXdgRuntimeDir)
-
 	// change it to the current working directory
 	os.Setenv(envXdgRuntimeDir, curDir)
 
-	return func(t *testing.T) {
+	origEnvPkiCache := os.Getenv(envPkiCache)
+	// change it to the current working directory
+	os.Setenv(envPkiCache, curDir)
+
+	return func(t *testing.T, testFile string) {
 		// cleanup
 		os.Setenv(envXdgRuntimeDir, origEnvXdgRuntimeDir)
+		os.Setenv(envPkiCache, origEnvPkiCache)
+		os.Remove(testFile)
 	}
 }
