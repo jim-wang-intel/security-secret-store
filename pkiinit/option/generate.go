@@ -30,7 +30,7 @@ import (
 func Generate() func(*PkiInitOption) (exitCode, error) {
 	return func(pkiInitOpton *PkiInitOption) (exitCode, error) {
 
-		if isNoOp(pkiInitOpton) {
+		if isGenerateNoOp(pkiInitOpton) {
 			return normal, nil
 		}
 
@@ -38,9 +38,9 @@ func Generate() func(*PkiInitOption) (exitCode, error) {
 	}
 }
 
-func isNoOp(pkiInitOpton *PkiInitOption) bool {
+func isGenerateNoOp(pkiInitOption *PkiInitOption) bool {
 	// nop: if the flag is missing or not on
-	return pkiInitOpton == nil || !pkiInitOpton.generateOpt
+	return pkiInitOption == nil || !pkiInitOption.GenerateOpt
 }
 
 func generatePkis() (exitCode, error) {

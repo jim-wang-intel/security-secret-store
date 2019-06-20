@@ -74,6 +74,19 @@ func TestGenerateOptionWithRunError(t *testing.T) {
 	assert.Equal(true, generateOpt)
 }
 
+func TestSetupPkiInitOption(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	generateOpt = true
+
+	_, status, err := setupPkiInitOption()
+	assert.Equal(0, status)
+	assert.Nil(err)
+}
+
 func setupTest(t *testing.T) func(t *testing.T, args []string) {
 	exitInstance = newTestExit()
 	dispatcherInstance = newTestDispatcher()
