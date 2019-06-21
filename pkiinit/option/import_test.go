@@ -26,16 +26,11 @@ import (
 )
 
 func TestImportPriorFileChange(t *testing.T) {
-	var exitStatus exitCode
-	var err error
-	// put some test file into the current dir to trigger event
-	curDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
-	}
-	testFile := filepath.Join(curDir, "testFile")
+	// this test case is for import running first
+	// and waiting for files from PKI_CACHE dir to be appeared
+
 	tearDown := setupImportTest(t)
-	defer tearDown(t, testFile)
+	defer tearDown(t)
 
 	options := PkiInitOption{
 		ImportOpt: true,
@@ -43,46 +38,40 @@ func TestImportPriorFileChange(t *testing.T) {
 	importOn, _, _ := NewPkiInitOption(options)
 	importOn.(*PkiInitOption).executor = testExecutor
 
-	f := Import()
-
-	go func() {
+	var exitStatus exitCode
+	var err error
+	go func() { // in a gorountine, so it won't block
+		f := Import()
 		exitStatus, err = f(importOn.(*PkiInitOption))
 	}()
 
+	// to allow time for go func() to be properly initialized
 	time.Sleep(time.Second)
 
-	testData := []byte("test data\n")
-	if err := ioutil.WriteFile(testFile, testData, 0644); err != nil {
-		t.Fatalf("cannot write testData to direcotry %s: %v", curDir, err)
-	}
+	// now put a testFile into cache dir
+	writeTestFileToCacheDir(t)
+
+	// to allow time to finish deploy in another go-routine
+	time.Sleep(2 * time.Second)
+
+	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
 
 	assert := assert.New(t)
 	assert.Equal(normal, exitStatus)
 	assert.Nil(err)
+	assert.Nil(emptyErr)
+	assert.False(deployEmpty)
 }
 
 func TestImportPostFileChange(t *testing.T) {
-	var exitStatus exitCode
-	var err error
-	// put some test file into the current dir to trigger event
-	curDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
-	}
-	testFile := filepath.Join(curDir, "testFile")
+	// this test case is for import running later
+	// files from PKI_CACHE dir are already in-place before import is called
+
 	tearDown := setupImportTest(t)
-	defer tearDown(t, testFile)
+	defer tearDown(t)
 
-	// put some test file into the current dir to trigger event
-	curDir, err = os.Getwd()
-	if err != nil {
-		t.Fatalf("cannot get the working dir %s: %v", curDir, err)
-	}
-
-	testData := []byte("test data\n")
-	if err := ioutil.WriteFile(filepath.Join(curDir, "testFile"), testData, 0644); err != nil {
-		t.Fatalf("cannot write testData to direcotry %s: %v", curDir, err)
-	}
+	// put some test file into the cache dir first
+	writeTestFileToCacheDir(t)
 
 	options := PkiInitOption{
 		ImportOpt: true,
@@ -92,18 +81,35 @@ func TestImportPostFileChange(t *testing.T) {
 
 	f := Import()
 
-	exitStatus, err = f(importOn.(*PkiInitOption))
+	exitStatus, err := f(importOn.(*PkiInitOption))
 
-	time.Sleep(time.Second)
+	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
 
 	assert := assert.New(t)
 	assert.Equal(normal, exitStatus)
 	assert.Nil(err)
+	assert.Nil(emptyErr)
+	assert.False(deployEmpty)
+}
+
+func TestEmptyPkiCacheEnvironment(t *testing.T) {
+	options := PkiInitOption{
+		ImportOpt: true,
+	}
+	importOn, _, _ := NewPkiInitOption(options)
+	importOn.(*PkiInitOption).executor = testExecutor
+	exitCode, err := importOn.executeOptions(Import())
+
+	// when PKI_CACHE env is empty, it leads to non-existing dir
+	// and should be an error case
+	assert := assert.New(t)
+	assert.NotNil(err)
+	assert.Equal(exitWithError, exitCode)
 }
 
 func TestImportOff(t *testing.T) {
 	tearDown := setupImportTest(t)
-	defer tearDown(t, "")
+	defer tearDown(t)
 
 	options := PkiInitOption{
 		ImportOpt: false,
@@ -147,7 +153,7 @@ func TestIsDirEmpty(t *testing.T) {
 	assert.True(empty)
 }
 
-func setupImportTest(t *testing.T) func(t *testing.T, testFile string) {
+func setupImportTest(t *testing.T) func(t *testing.T) {
 	testExecutor = &mockOptionsExecutor{}
 	curDir, err := os.Getwd()
 	if err != nil {
@@ -159,13 +165,36 @@ func setupImportTest(t *testing.T) func(t *testing.T, testFile string) {
 	os.Setenv(envXdgRuntimeDir, curDir)
 
 	origEnvPkiCache := os.Getenv(envPkiCache)
-	// change it to the current working directory
-	os.Setenv(envPkiCache, curDir)
+	// use curDir/cache as the working directory for test
+	pkiCacheDir := filepath.Join(curDir, "cache")
+	os.Setenv(envPkiCache, pkiCacheDir)
+	createDirectoryIfNotExists(pkiCacheDir)
 
-	return func(t *testing.T, testFile string) {
+	origDeployDir := pkiInitDeployDir
+	tempDir, tempDirErr := ioutil.TempDir(curDir, "deploytest")
+	if tempDirErr != nil {
+		t.Fatalf("cannot create temporary scratch directory for the test: %v", tempDirErr)
+	}
+	pkiInitDeployDir = tempDir
+
+	return func(t *testing.T) {
 		// cleanup
 		os.Setenv(envXdgRuntimeDir, origEnvXdgRuntimeDir)
 		os.Setenv(envPkiCache, origEnvPkiCache)
-		os.Remove(testFile)
+		os.RemoveAll(pkiInitDeployDir)
+		os.RemoveAll(pkiCacheDir)
+		pkiInitDeployDir = origDeployDir
+	}
+}
+
+func writeTestFileToCacheDir(t *testing.T) {
+	pkiCacheDir := os.Getenv(envPkiCache)
+	// make a test dir
+	testFileDir := filepath.Join(pkiCacheDir, "test")
+	_ = createDirectoryIfNotExists(testFileDir)
+	testFile := filepath.Join(testFileDir, "testFile")
+	testData := []byte("test data\n")
+	if err := ioutil.WriteFile(testFile, testData, 0644); err != nil {
+		t.Fatalf("cannot write testData to direcotry %s: %v", pkiCacheDir, err)
 	}
 }

@@ -36,3 +36,4 @@ const (
 
 var pkiInitScratchDir = filepath.Join(pkiInitBaseDir, "scratch")
 var pkiInitGeneratedDir = filepath.Join(pkiInitBaseDir, "generated")
+var pkiInitDeployDir = filepath.Join("run", "edgex", "secrets")

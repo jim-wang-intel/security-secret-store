@@ -16,9 +16,7 @@
 package option
 
 import (
-	"io"
 	"log"
-	"os"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -50,8 +48,6 @@ func importPkis() (statusCode exitCode, err error) {
 		return exitWithError, err
 	}
 
-	destDir := "/run/edgex/secrets"
-
 	if dirEmpty {
 
 		pkiCacheWatcher, newErr := fsnotify.NewWatcher()
@@ -68,7 +64,7 @@ func importPkis() (statusCode exitCode, err error) {
 				select {
 				case event := <-pkiCacheWatcher.Events:
 					log.Printf("watcher event: %#v\n", event)
-					err = deploy(pkiCacheDir, destDir)
+					err = deploy(pkiCacheDir, pkiInitDeployDir)
 					if err != nil {
 						statusCode = exitWithError
 					} else {
@@ -91,7 +87,7 @@ func importPkis() (statusCode exitCode, err error) {
 		<-done
 	} else {
 		// copy stuff into dest dir from pkiCache
-		err = deploy(pkiCacheDir, destDir)
+		err = deploy(pkiCacheDir, pkiInitDeployDir)
 		if err != nil {
 			statusCode = exitWithError
 		}
@@ -101,30 +97,5 @@ func importPkis() (statusCode exitCode, err error) {
 }
 
 func deploy(srcDir, destDir string) error {
-	return nil
-}
-
-func getPkiCacheDirEnv() string {
-	pkiCacheDir := os.Getenv(envPkiCache)
-	if pkiCacheDir == "" {
-		return defaultPkiCacheDir
-	}
-	return pkiCacheDir
-}
-
-func isDirEmpty(dir string) (empty bool, err error) {
-	handle, err := os.Open(dir)
-	if err != nil {
-		return empty, err
-	}
-	defer handle.Close()
-
-	_, err = handle.Readdir(1)
-	if err == io.EOF {
-		// EOF error means the dir is empty
-		empty = true
-		err = nil
-	}
-
-	return empty, err
+	return copyDir(srcDir, destDir)
 }
