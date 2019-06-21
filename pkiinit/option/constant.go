@@ -25,6 +25,7 @@ const (
 	envPkiCache        = "PKI_CACHE"
 	defaultPkiCacheDir = "/etc/edgex/pki"
 	pkiInitBaseDir     = "/edgex/pki-init"
+	tmpfsRunDir        = "/run"
 	tlsSceretFileName  = "server.key"
 	tlsCertFileName    = "server.crt"
 	caCertFileName     = "ca.pem"
@@ -36,4 +37,4 @@ const (
 
 var pkiInitScratchDir = filepath.Join(pkiInitBaseDir, "scratch")
 var pkiInitGeneratedDir = filepath.Join(pkiInitBaseDir, "generated")
-var pkiInitDeployDir = filepath.Join("run", "edgex", "secrets")
+var pkiInitDeployDir = filepath.Join(tmpfsRunDir, "edgex", "secrets")
