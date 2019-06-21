@@ -96,12 +96,11 @@ func copyDir(srcDir, destDir string) error {
 		destFilePath := filepath.Join(destDir, fileDesc.Name())
 
 		if fileDesc.IsDir() {
-			log.Printf("filepath is a dir: %s", fileDesc.Name())
 			if err := copyDir(srcFilePath, destFilePath); err != nil {
 				return err
 			}
 		} else {
-			log.Printf("coping srcFilePath: %s to destFilePath: %s", srcFilePath, destFilePath)
+			log.Printf("copying srcFilePath: %s to destFilePath: %s", srcFilePath, destFilePath)
 			if _, copyErr := copyFile(srcFilePath, destFilePath); copyErr != nil {
 				return copyErr
 			}
