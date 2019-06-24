@@ -52,7 +52,7 @@ func TestImportPriorFileChange(t *testing.T) {
 	writeTestFileToCacheDir(t)
 
 	// to allow time to finish deploy in another go-routine
-	time.Sleep(2 * time.Second)
+	time.Sleep(4 * time.Second)
 
 	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
 
@@ -190,7 +190,7 @@ func setupImportTest(t *testing.T) func(t *testing.T) {
 func writeTestFileToCacheDir(t *testing.T) {
 	pkiCacheDir := os.Getenv(envPkiCache)
 	// make a test dir
-	testFileDir := filepath.Join(pkiCacheDir, "test")
+	testFileDir := filepath.Join(pkiCacheDir, "test", caServiceName)
 	_ = createDirectoryIfNotExists(testFileDir)
 	testFile := filepath.Join(testFileDir, "testFile")
 	testData := []byte("test data\n")

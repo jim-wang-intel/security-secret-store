@@ -17,6 +17,7 @@ package option
 
 import (
 	"log"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -63,7 +64,14 @@ func importPkis() (statusCode exitCode, err error) {
 			for {
 				select {
 				case event := <-pkiCacheWatcher.Events:
+					if event.Name == "" { // skip if event name is empty
+						continue
+					}
 					log.Printf("watcher event: %#v\n", event)
+					// wait for some time before the directory settle down on the source side
+					// as the whole directory tree is just dropped in
+					time.Sleep(3 * time.Second)
+
 					err = deploy(pkiCacheDir, pkiInitDeployDir)
 					if err != nil {
 						statusCode = exitWithError
@@ -72,7 +80,10 @@ func importPkis() (statusCode exitCode, err error) {
 					}
 					done <- true
 				case watcherErr := <-pkiCacheWatcher.Errors:
-					log.Printf("watcher error: %v\n", err)
+					if watcherErr == nil {
+						continue
+					}
+					log.Printf("watcher error: %v\n", watcherErr)
 					statusCode = exitWithError
 					err = watcherErr
 					done <- true
