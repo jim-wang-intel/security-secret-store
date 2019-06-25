@@ -74,6 +74,18 @@ func TestGenerateOptionWithRunError(t *testing.T) {
 	assert.Equal(true, generateOpt)
 }
 
+func TestImportOptionOk(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithImportOption(false)
+	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(true, importOpt)
+}
+
 func TestSetupPkiInitOption(t *testing.T) {
 	tearDown := setupTest(t)
 	origArgs := os.Args
@@ -94,6 +106,7 @@ func setupTest(t *testing.T) func(t *testing.T, args []string) {
 		// reset after each test
 		helpOpt = false
 		generateOpt = false
+		importOpt = false
 		hasDispatchError = false
 		os.Args = args
 	}
@@ -116,6 +129,14 @@ func runWithHelpOption() {
 func runWithGenerateOption(hasError bool) {
 	// case 3: generate option given
 	os.Args = []string{"cmd", "-generate"}
+	printCommandLineStrings(os.Args)
+	hasDispatchError = hasError
+	main()
+}
+
+func runWithImportOption(hasError bool) {
+	// case 3: generate option given
+	os.Args = []string{"cmd", "-import"}
 	printCommandLineStrings(os.Args)
 	hasDispatchError = hasError
 	main()
@@ -155,7 +176,7 @@ func newTestDispatcher() optionDispatcher {
 }
 
 func (testDispatcher *testPkiInitOptionDispatcher) run() (statusCode int, err error) {
-	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v\n", helpOpt, generateOpt)
+	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v, importOpt = %v\n", helpOpt, generateOpt, importOpt)
 	if hasDispatchError {
 		statusCode = 2
 		err = errors.New("dispatch error found")
