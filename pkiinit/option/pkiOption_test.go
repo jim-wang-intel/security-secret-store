@@ -78,6 +78,24 @@ func TestNewPkiInitOption_CacheOnly(t *testing.T) {
 	assert.Equal(false, optionsExecutor.(*PkiInitOption).CacheOpt)
 }
 
+func TestNewPkiInitOption_CacheCAOnly(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		CacheCAOpt: true,
+	}
+	// cache CA option given
+	optionsExecutor, _, _ := NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(true, optionsExecutor.(*PkiInitOption).CacheCAOpt)
+
+	// cache CA option omitted
+	options.CacheCAOpt = false
+	optionsExecutor, _, _ = NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(false, optionsExecutor.(*PkiInitOption).CacheCAOpt)
+}
+
 func TestNewPkiInitOption_ImportAndGenerate(t *testing.T) {
 	assert := assert.New(t)
 
@@ -132,6 +150,102 @@ func TestNewPkiInitOption_CacheAndGenerateAndImport(t *testing.T) {
 	assert.NotNil(err)
 }
 
+func TestNewPkiInitOption_CacheCAAndGenerate(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt:	true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt:	true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		CacheOpt:	true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt:	true,
+		ImportOpt: true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt:	true,
+		CacheOpt: true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndImportAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt: true,
+		CacheOpt: true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateImportAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt:	true,
+		ImportOpt: true,
+		CacheOpt: true,
+		CacheCAOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
 func getMockArguments() []interface{} {
 	var ifc []interface{}
 
@@ -140,6 +254,8 @@ func getMockArguments() []interface{} {
 	// for import opt
 	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
 	// for cache opt
+	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+	// for cache CA opt
 	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
 
 	return ifc
