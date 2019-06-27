@@ -105,6 +105,20 @@ func TestCacheOptionOk(t *testing.T) {
 	assert.Equal(true, (optionExec.(*option.PkiInitOption)).CacheOpt)
 }
 
+func TestCacheCAOptionOk(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithCacheCAOption(false)
+	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(true, cacheCAOpt)
+	optionExec := (dispatcherInstance.(*testPkiInitOptionDispatcher)).testOptsExecutor
+	assert.Equal(true, (optionExec.(*option.PkiInitOption)).CacheCAOpt)
+}
+
 func TestSetupPkiInitOption(t *testing.T) {
 	tearDown := setupTest(t)
 	origArgs := os.Args
@@ -127,6 +141,7 @@ func setupTest(t *testing.T) func(t *testing.T, args []string) {
 		generateOpt = false
 		importOpt = false
 		cacheOpt = false
+		cacheCAOpt = false
 		hasDispatchError = false
 		os.Args = args
 	}
@@ -170,6 +185,14 @@ func runWithCacheOption(hasError bool) {
 	main()
 }
 
+func runWithCacheCAOption(hasError bool) {
+	// case 6: cache CA option given
+	os.Args = []string{"cmd", "-cacheca"}
+	printCommandLineStrings(os.Args)
+	hasDispatchError = hasError
+	main()
+}
+
 func printCommandLineStrings(strs []string) {
 	fmt.Print("command line strings: ")
 	for _, str := range strs {
@@ -205,8 +228,8 @@ func newTestDispatcher() optionDispatcher {
 }
 
 func (testDispatcher *testPkiInitOptionDispatcher) run() (statusCode int, err error) {
-	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v, importOpt = %v, cacheOpt = %v\n",
-		helpOpt, generateOpt, importOpt, cacheOpt)
+	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v, importOpt = %v, cacheOpt = %v, cacheCAOpt = %v \n",
+		helpOpt, generateOpt, importOpt, cacheOpt, cacheCAOpt)
 
 	optsExecutor, _, _ := setupPkiInitOption()
 	testDispatcher.testOptsExecutor = optsExecutor
