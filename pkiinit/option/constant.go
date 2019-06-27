@@ -26,7 +26,7 @@ const (
 	defaultPkiCacheDir = "/etc/edgex/pki"
 	pkiInitBaseDir     = "/edgex/pki-init"
 	tmpfsRunDir        = "/run"
-	tlsSceretFileName  = "server.key"
+	tlsSecretFileName  = "server.key"
 	tlsCertFileName    = "server.crt"
 	caCertFileName     = "ca.pem"
 

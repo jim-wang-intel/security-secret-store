@@ -60,6 +60,24 @@ func TestNewPkiInitOption_ImportOnly(t *testing.T) {
 	assert.Equal(false, optionsExecutor.(*PkiInitOption).ImportOpt)
 }
 
+func TestNewPkiInitOption_CacheOnly(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		CacheOpt: true,
+	}
+	// cache option given
+	optionsExecutor, _, _ := NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(true, optionsExecutor.(*PkiInitOption).CacheOpt)
+
+	// cache option omitted
+	options.CacheOpt = false
+	optionsExecutor, _, _ = NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(false, optionsExecutor.(*PkiInitOption).CacheOpt)
+}
+
 func TestNewPkiInitOption_ImportAndGenerate(t *testing.T) {
 	assert := assert.New(t)
 
@@ -74,12 +92,54 @@ func TestNewPkiInitOption_ImportAndGenerate(t *testing.T) {
 	assert.NotNil(err)
 }
 
+func TestNewPkiInitOption_CacheAndGenerate(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		CacheOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt: true,
+		CacheOpt:  true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheAndGenerateAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   true,
+		CacheOpt:    true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
 func getMockArguments() []interface{} {
 	var ifc []interface{}
 
 	// for generate opt
 	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
 	// for import opt
+	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+	// for cache opt
 	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
 
 	return ifc

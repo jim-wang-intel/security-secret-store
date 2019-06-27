@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/edgexfoundry/security-secret-store/pkiinit/option"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,6 +61,8 @@ func TestGenerateOptionOk(t *testing.T) {
 	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
 	assert.Equal(false, helpOpt)
 	assert.Equal(true, generateOpt)
+	optionExec := (dispatcherInstance.(*testPkiInitOptionDispatcher)).testOptsExecutor
+	assert.Equal(true, (optionExec.(*option.PkiInitOption)).GenerateOpt)
 }
 
 func TestGenerateOptionWithRunError(t *testing.T) {
@@ -84,6 +87,22 @@ func TestImportOptionOk(t *testing.T) {
 	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
 	assert.Equal(false, helpOpt)
 	assert.Equal(true, importOpt)
+	optionExec := (dispatcherInstance.(*testPkiInitOptionDispatcher)).testOptsExecutor
+	assert.Equal(true, (optionExec.(*option.PkiInitOption)).ImportOpt)
+}
+
+func TestCacheOptionOk(t *testing.T) {
+	tearDown := setupTest(t)
+	origArgs := os.Args
+	defer tearDown(t, origArgs)
+	assert := assert.New(t)
+
+	runWithCacheOption(false)
+	assert.Equal(0, (exitInstance.(*testExitCode)).getStatusCode())
+	assert.Equal(false, helpOpt)
+	assert.Equal(true, cacheOpt)
+	optionExec := (dispatcherInstance.(*testPkiInitOptionDispatcher)).testOptsExecutor
+	assert.Equal(true, (optionExec.(*option.PkiInitOption)).CacheOpt)
 }
 
 func TestSetupPkiInitOption(t *testing.T) {
@@ -107,6 +126,7 @@ func setupTest(t *testing.T) func(t *testing.T, args []string) {
 		helpOpt = false
 		generateOpt = false
 		importOpt = false
+		cacheOpt = false
 		hasDispatchError = false
 		os.Args = args
 	}
@@ -135,8 +155,16 @@ func runWithGenerateOption(hasError bool) {
 }
 
 func runWithImportOption(hasError bool) {
-	// case 3: generate option given
+	// case 4: import option given
 	os.Args = []string{"cmd", "-import"}
+	printCommandLineStrings(os.Args)
+	hasDispatchError = hasError
+	main()
+}
+
+func runWithCacheOption(hasError bool) {
+	// case 5: cache option given
+	os.Args = []string{"cmd", "-cache"}
 	printCommandLineStrings(os.Args)
 	hasDispatchError = hasError
 	main()
@@ -169,6 +197,7 @@ func (testExit *testExitCode) getStatusCode() int {
 }
 
 type testPkiInitOptionDispatcher struct {
+	testOptsExecutor option.OptionsExecutor
 }
 
 func newTestDispatcher() optionDispatcher {
@@ -176,7 +205,12 @@ func newTestDispatcher() optionDispatcher {
 }
 
 func (testDispatcher *testPkiInitOptionDispatcher) run() (statusCode int, err error) {
-	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v, importOpt = %v\n", helpOpt, generateOpt, importOpt)
+	fmt.Printf("In test flag value: helpOpt = %v, generateOpt = %v, importOpt = %v, cacheOpt = %v\n",
+		helpOpt, generateOpt, importOpt, cacheOpt)
+
+	optsExecutor, _, _ := setupPkiInitOption()
+	testDispatcher.testOptsExecutor = optsExecutor
+
 	if hasDispatchError {
 		statusCode = 2
 		err = errors.New("dispatch error found")

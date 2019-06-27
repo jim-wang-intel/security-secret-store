@@ -50,7 +50,13 @@ func copyFile(fileSrc, fileDest string) (int64, error) {
 	}
 	defer dest.Close()
 
-	return io.Copy(dest, source)
+	bytesWritten, copyErr := io.Copy(dest, source)
+	if copyErr != nil {
+		return zeroByte, copyErr
+	}
+	// make dest has the same file mode as the source
+	os.Chmod(fileDest, sourceFileSt.Mode())
+	return bytesWritten, nil
 }
 
 func createDirectoryIfNotExists(dirName string) (err error) {
@@ -117,4 +123,10 @@ func getPkiCacheDirEnv() string {
 		return defaultPkiCacheDir
 	}
 	return pkiCacheDir
+}
+
+func deploy(srcDir, destDir string) error {
+	// cleanup the destDir first
+	os.RemoveAll(destDir)
+	return copyDir(srcDir, destDir)
 }
