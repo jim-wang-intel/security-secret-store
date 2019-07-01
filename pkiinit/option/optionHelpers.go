@@ -130,6 +130,13 @@ func deploy(srcDir, destDir string) error {
 }
 
 func secureEraseFile(fileToErase string) error {
+	if err := zeroOutFile(fileToErase); err != nil {
+		return err
+	}
+	return os.Remove(fileToErase)
+}
+
+func zeroOutFile(fileToErase string) error {
 	// grant the file read-write permission first
 	os.Chmod(fileToErase, 0600)
 	fileHdl, err := os.OpenFile(fileToErase, os.O_RDWR, 0600)
@@ -150,6 +157,5 @@ func secureEraseFile(fileToErase string) error {
 	if _, err := fileHdl.Write(zeroBytes); err != nil {
 		return err
 	}
-
-	return os.Remove(fileToErase)
+	return nil
 }
