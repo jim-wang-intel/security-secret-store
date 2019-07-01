@@ -131,8 +131,8 @@ func deploy(srcDir, destDir string) error {
 
 func secureEraseFile(fileToErase string) error {
 	// grant the file read-write permission first
-	os.Chmod(fileToErase, os.ModePerm)
-	fileHdl, err := os.OpenFile(fileToErase, os.O_RDWR, 0666)
+	os.Chmod(fileToErase, 0600)
+	fileHdl, err := os.OpenFile(fileToErase, os.O_RDWR, 0600)
 	defer fileHdl.Close()
 	if err != nil {
 		return err
