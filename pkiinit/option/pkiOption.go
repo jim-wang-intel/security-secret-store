@@ -38,12 +38,12 @@ func NewPkiInitOption(opts PkiInitOption) (ex OptionsExecutor, statusCode int, e
 	if opts.ImportOpt && opts.GenerateOpt {
 		return ex, exitWithError.intValue(), errors.New("Cannot attempt import option with other modes")
 	}
-	// cache option cannot used with -generate or -import
+	// cache option cannot used with -generate or -import or -cacheca
 	if opts.CacheOpt && (opts.GenerateOpt || opts.ImportOpt || opts.CacheCAOpt) {
 		return ex, exitWithError.intValue(), errors.New("Cannot attempt cache option with other modes")
 	}
 
-	// cache CA option cannot used with -generate or -import
+	// cache CA option cannot used with -generate or -import or -cache
 	if opts.CacheCAOpt && (opts.GenerateOpt || opts.ImportOpt || opts.CacheOpt) {
 		return ex, exitWithError.intValue(), errors.New("Cannot attempt cache CA option with other modes")
 	}
