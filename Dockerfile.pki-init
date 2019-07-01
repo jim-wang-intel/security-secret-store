@@ -21,6 +21,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
       copyright='Copyright (c) 2019 Intel Corporation'
 
 ENV PKI_INIT_DIR=/edgex/pki-init
+ENV PKI_CACHE=/etc/edgex/pki
 
 RUN set -eux; \
     apk add --no-cache ca-certificates dumb-init
