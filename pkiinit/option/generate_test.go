@@ -32,10 +32,13 @@ var vaultJSONPkiSetupExist bool
 func TestGenerate(t *testing.T) {
 	pkisetupLocal = true
 	vaultJSONPkiSetupExist = true
-	tearDown := setupTest(t)
+	tearDown := setupGenerateTest(t)
 	defer tearDown(t)
 
-	generateOn := NewPkiInitOption(true)
+	options := PkiInitOption{
+		GenerateOpt: true,
+	}
+	generateOn, _, _ := NewPkiInitOption(options)
 	generateOn.(*PkiInitOption).executor = testExecutor
 
 	f := Generate()
@@ -49,9 +52,13 @@ func TestGenerate(t *testing.T) {
 func TestGenerateWithPkiSetupMissing(t *testing.T) {
 	pkisetupLocal = false // this will lead to pkisetup binary missing
 	vaultJSONPkiSetupExist = true
-	tearDown := setupTest(t)
+	tearDown := setupGenerateTest(t)
 	defer tearDown(t)
-	generateOn := NewPkiInitOption(true)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+	}
+	generateOn, _, _ := NewPkiInitOption(options)
 	generateOn.(*PkiInitOption).executor = testExecutor
 
 	f := Generate()
@@ -65,10 +72,13 @@ func TestGenerateWithPkiSetupMissing(t *testing.T) {
 func TestGenerateWithVaultJSONPkiSetupMissing(t *testing.T) {
 	pkisetupLocal = true
 	vaultJSONPkiSetupExist = false // this will lead to missing json
-	tearDown := setupTest(t)
+	tearDown := setupGenerateTest(t)
 	defer tearDown(t)
 
-	generateOn := NewPkiInitOption(true)
+	options := PkiInitOption{
+		GenerateOpt: true,
+	}
+	generateOn, _, _ := NewPkiInitOption(options)
 	generateOn.(*PkiInitOption).executor = testExecutor
 
 	f := Generate()
@@ -82,10 +92,13 @@ func TestGenerateWithVaultJSONPkiSetupMissing(t *testing.T) {
 func TestGenerateOff(t *testing.T) {
 	pkisetupLocal = true
 	vaultJSONPkiSetupExist = true
-	tearDown := setupTest(t)
+	tearDown := setupGenerateTest(t)
 	defer tearDown(t)
 
-	generateOff := NewPkiInitOption(false)
+	options := PkiInitOption{
+		GenerateOpt: false,
+	}
+	generateOff, _, _ := NewPkiInitOption(options)
 	generateOff.(*PkiInitOption).executor = testExecutor
 	exitCode, err := generateOff.executeOptions(Generate())
 
@@ -94,7 +107,7 @@ func TestGenerateOff(t *testing.T) {
 	assert.Nil(err)
 }
 
-func setupTest(t *testing.T) func(t *testing.T) {
+func setupGenerateTest(t *testing.T) func(t *testing.T) {
 	testExecutor = &mockOptionsExecutor{}
 	curDir, err := os.Getwd()
 	if err != nil {

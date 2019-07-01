@@ -17,7 +17,6 @@ package option
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -30,7 +29,7 @@ import (
 func Generate() func(*PkiInitOption) (exitCode, error) {
 	return func(pkiInitOpton *PkiInitOption) (exitCode, error) {
 
-		if isNoOp(pkiInitOpton) {
+		if isGenerateNoOp(pkiInitOpton) {
 			return normal, nil
 		}
 
@@ -38,9 +37,9 @@ func Generate() func(*PkiInitOption) (exitCode, error) {
 	}
 }
 
-func isNoOp(pkiInitOpton *PkiInitOption) bool {
+func isGenerateNoOp(pkiInitOption *PkiInitOption) bool {
 	// nop: if the flag is missing or not on
-	return pkiInitOpton == nil || !pkiInitOpton.generateOpt
+	return pkiInitOption == nil || !pkiInitOption.GenerateOpt
 }
 
 func generatePkis() (exitCode, error) {
@@ -129,13 +128,6 @@ func rearrangePkiByServices(baseWorkingDir, pkiSetupVaultJSONPath string) (exitC
 	return normal, nil
 }
 
-func createDirectoryIfNotExists(dirName string) (err error) {
-	if _, err := os.Stat(dirName); os.IsNotExist(err) {
-		err = os.MkdirAll(dirName, os.ModePerm)
-	}
-	return err
-}
-
 func copyGeneratedForService(servicePath, pkiOutputDir string, config cert.X509Config) error {
 	if err := createDirectoryIfNotExists(servicePath); err != nil {
 		return err
@@ -168,33 +160,4 @@ func cleanup(baseWorkingDir, scratchPath string) {
 	os.Chdir(baseWorkingDir)
 	os.RemoveAll(scratchPath)
 	log.Println("pki-init generation completes")
-}
-
-func copyFile(fileSrc, fileDest string) (int64, error) {
-	var zeroByte int64
-	sourceFileSt, err := os.Stat(fileSrc)
-	if err != nil {
-		return zeroByte, err
-	}
-
-	// only regular file allows to be copied
-	if !sourceFileSt.Mode().IsRegular() {
-		return zeroByte, fmt.Errorf("[%s] is not a regular file to be copied", fileSrc)
-	}
-
-	// now open the source file
-	source, openErr := os.Open(fileSrc)
-	if openErr != nil {
-		return zeroByte, openErr
-	}
-	defer source.Close()
-
-	// now create a new file
-	dest, createErr := os.Create(fileDest)
-	if createErr != nil {
-		return zeroByte, createErr
-	}
-	defer dest.Close()
-
-	return io.Copy(dest, source)
 }

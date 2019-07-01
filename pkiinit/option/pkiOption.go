@@ -15,6 +15,8 @@
 //
 package option
 
+import "errors"
+
 // OptionsExecutor is an executor to process the input options
 type OptionsExecutor interface {
 	ProcessOptions() (int, error)
@@ -23,23 +25,27 @@ type OptionsExecutor interface {
 
 // PkiInitOption contains command line options for pki-init
 type PkiInitOption struct {
-	generateOpt bool
+	GenerateOpt bool
+	ImportOpt   bool
 	executor    OptionsExecutor
 }
 
 // NewPkiInitOption constructor to get options built for pki-init
-func NewPkiInitOption(generateInput bool) OptionsExecutor {
-	instance := &PkiInitOption{
-		generateOpt: generateInput,
+func NewPkiInitOption(opts PkiInitOption) (ex OptionsExecutor, statusCode int, err error) {
+	// import option cannot be attempted with other modes
+	if opts.ImportOpt && opts.GenerateOpt {
+		return ex, exitWithError.intValue(), errors.New("Cannot attempt import option with other modes")
 	}
-	instance.executor = instance
-	return instance
+	opts.executor = &opts
+
+	return &opts, normal.intValue(), nil
 }
 
 // ProcessOptions processes all the input options from the caller
 func (pkiInitOpt *PkiInitOption) ProcessOptions() (int, error) {
 	statusCode, err := pkiInitOpt.executor.executeOptions(
 		Generate(),
+		Import(),
 	)
 
 	return statusCode.intValue(), err

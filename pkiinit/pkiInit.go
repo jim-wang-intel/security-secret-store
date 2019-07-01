@@ -40,12 +40,14 @@ var exitInstance = newExit()
 var dispatcherInstance = newOptionDispatcher()
 var helpOpt bool
 var generateOpt bool
+var importOpt bool
 
 func init() {
 	// define and register command line flags:
 	flag.BoolVar(&helpOpt, "h", false, "help message")
 	flag.BoolVar(&helpOpt, "help", false, "help message")
 	flag.BoolVar(&generateOpt, "generate", false, "to generate a new PKI from scratch")
+	flag.BoolVar(&importOpt, "import", false, " deploys a PKI from a cached PKI")
 }
 
 func main() {
@@ -86,7 +88,21 @@ func (code *exitCode) callExit(statusCode int) {
 	os.Exit(statusCode)
 }
 
+func setupPkiInitOption() (executor option.OptionsExecutor, status int, err error) {
+	opts := option.PkiInitOption{
+		GenerateOpt: generateOpt,
+		ImportOpt:   importOpt,
+	}
+
+	return option.NewPkiInitOption(opts)
+}
+
 func (dispatcher *pkiInitOptionDispatcher) run() (statusCode int, err error) {
-	pkiInitOption := option.NewPkiInitOption(generateOpt)
-	return pkiInitOption.ProcessOptions()
+
+	optsExecutor, statusCode, err := setupPkiInitOption()
+	if err != nil {
+		return
+	}
+
+	return optsExecutor.ProcessOptions()
 }
