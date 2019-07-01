@@ -126,7 +126,30 @@ func getPkiCacheDirEnv() string {
 }
 
 func deploy(srcDir, destDir string) error {
-	// cleanup the destDir first
-	os.RemoveAll(destDir)
 	return copyDir(srcDir, destDir)
+}
+
+func secureEraseFile(fileToErase string) error {
+	// grant the file read-write permission first
+	os.Chmod(fileToErase, os.ModePerm)
+	fileHdl, err := os.OpenFile(fileToErase, os.O_RDWR, 0666)
+	defer fileHdl.Close()
+	if err != nil {
+		return err
+	}
+	fileInfo, err := fileHdl.Stat()
+	if err != nil {
+		return err
+	}
+
+	fileSize := fileInfo.Size()
+	zeroBytes := make([]byte, fileSize)
+	copy(zeroBytes[:], "0")
+
+	// fill the file with zero bytes
+	if _, err := fileHdl.Write(zeroBytes); err != nil {
+		return err
+	}
+
+	return os.Remove(fileToErase)
 }
