@@ -38,10 +38,16 @@ func isCacheNoOp(pkiInitOption *PkiInitOption) bool {
 }
 
 func cachePkis(cacheca bool) (statusCode exitCode, err error) {
-	// first perform generate func
-	statusCode, err = generatePkis()
-	if err != nil {
-		return statusCode, err
+	// generate a new one if pkicache dir is empty
+	pkiCacheDir := getPkiCacheDirEnv()
+	if empty, err := isDirEmpty(pkiCacheDir); err != nil {
+		return exitWithError, err
+	} else if empty {
+		// perform generate func
+		statusCode, err = generatePkis()
+		if err != nil {
+			return statusCode, err
+		}
 	}
 
 	generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
@@ -60,7 +66,7 @@ func cachePkis(cacheca bool) (statusCode exitCode, err error) {
 
 	// to deploy
 	// copy stuff into dest dir from pkiCache
-	err = deploy(getPkiCacheDirEnv(), pkiInitDeployDir)
+	err = deploy(pkiCacheDir, pkiInitDeployDir)
 	if err != nil {
 		return exitWithError, err
 	}
@@ -73,9 +79,5 @@ func doCache(fromDir string) error {
 	pkiCacheDir := getPkiCacheDirEnv()
 
 	// to cache
-	err := copyDir(fromDir, pkiCacheDir)
-	if err != nil {
-		return err
-	}
-	return nil
+	return copyDir(fromDir, pkiCacheDir)
 }
