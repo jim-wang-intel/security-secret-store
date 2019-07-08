@@ -61,6 +61,50 @@ func TestCacheOn(t *testing.T) {
 	assert.False(deployEmpty)
 }
 
+func TestCacheDirNotEmpty(t *testing.T) {
+	pkisetupLocal = true
+	vaultJSONPkiSetupExist = true
+	tearDown := setupCacheTest(t)
+	defer tearDown(t)
+
+	options := PkiInitOption{
+		CacheOpt: true,
+	}
+	cacheOn, _, _ := NewPkiInitOption(options)
+	cacheOn.(*PkiInitOption).executor = testExecutor
+
+	var exitStatus exitCode
+	var err error
+	f := Cache()
+	exitStatus, err = f(cacheOn.(*PkiInitOption))
+
+	cacheEmpty, emptyErr := isDirEmpty(getPkiCacheDirEnv())
+
+	assert := assert.New(t)
+	assert.Equal(normal, exitStatus)
+	assert.Nil(err)
+	assert.Nil(emptyErr)
+	assert.False(cacheEmpty)
+
+	generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
+	// now we move the whole generated directory and leave the cache dir untouched
+	os.RemoveAll(generatedDirPath)
+
+	// call the cache option again:
+	exitStatus, err = f(cacheOn.(*PkiInitOption))
+
+	cacheEmpty, emptyErr = isDirEmpty(getPkiCacheDirEnv())
+
+	assert.Equal(normal, exitStatus)
+	assert.Nil(err)
+	assert.Nil(emptyErr)
+	assert.False(cacheEmpty)
+
+	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
+	assert.Nil(emptyErr)
+	assert.False(deployEmpty)
+}
+
 func TestCacheOff(t *testing.T) {
 	pkisetupLocal = true
 	vaultJSONPkiSetupExist = true

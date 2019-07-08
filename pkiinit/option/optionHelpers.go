@@ -43,6 +43,11 @@ func copyFile(fileSrc, fileDest string) (int64, error) {
 	}
 	defer source.Close()
 
+	if _, err := os.Stat(fileDest); err == nil {
+		// if fileDest alrady exists, remove it first before create a new one
+		os.Remove(fileDest)
+	}
+
 	// now create a new file
 	dest, createErr := os.Create(fileDest)
 	if createErr != nil {

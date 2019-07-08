@@ -48,20 +48,20 @@ func cachePkis(cacheca bool) (statusCode exitCode, err error) {
 		if err != nil {
 			return statusCode, err
 		}
-	}
 
-	generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
+		generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
 
-	if !cacheca {
-		// shreds CA private key before cache if cacheca is not on
-		caPrivateKeyFile := filepath.Join(generatedDirPath, caServiceName, tlsSecretFileName)
-		if err := secureEraseFile(caPrivateKeyFile); err != nil {
+		if !cacheca {
+			// shreds CA private key before cache if cacheca is not on
+			caPrivateKeyFile := filepath.Join(generatedDirPath, caServiceName, tlsSecretFileName)
+			if err := secureEraseFile(caPrivateKeyFile); err != nil {
+				return exitWithError, err
+			}
+		}
+
+		if err = doCache(generatedDirPath); err != nil {
 			return exitWithError, err
 		}
-	}
-
-	if err = doCache(generatedDirPath); err != nil {
-		return exitWithError, err
 	}
 
 	// to deploy
