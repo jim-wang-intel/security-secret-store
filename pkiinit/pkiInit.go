@@ -42,6 +42,7 @@ var helpOpt bool
 var generateOpt bool
 var importOpt bool
 var cacheOpt bool
+var cacheCAOpt bool
 
 func init() {
 	// define and register command line flags:
@@ -50,6 +51,7 @@ func init() {
 	flag.BoolVar(&generateOpt, "generate", false, "to generate a new PKI from scratch")
 	flag.BoolVar(&importOpt, "import", false, " deploys a PKI from a cached PKI")
 	flag.BoolVar(&cacheOpt, "cache", false, "generates a fresh PKI exactly once then caches it for future use")
+	flag.BoolVar(&cacheCAOpt, "cacheca", false, "generates a fresh PKI exactly once then caches it with the CA keys presevered")
 }
 
 func main() {
@@ -95,6 +97,7 @@ func setupPkiInitOption() (executor option.OptionsExecutor, status int, err erro
 		GenerateOpt: generateOpt,
 		ImportOpt:   importOpt,
 		CacheOpt:    cacheOpt,
+		CacheCAOpt:  cacheCAOpt,
 	}
 
 	return option.NewPkiInitOption(opts)

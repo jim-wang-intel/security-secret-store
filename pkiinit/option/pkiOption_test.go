@@ -17,6 +17,7 @@ package option
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -78,6 +79,24 @@ func TestNewPkiInitOption_CacheOnly(t *testing.T) {
 	assert.Equal(false, optionsExecutor.(*PkiInitOption).CacheOpt)
 }
 
+func TestNewPkiInitOption_CacheCAOnly(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		CacheCAOpt: true,
+	}
+	// cache CA option given
+	optionsExecutor, _, _ := NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(true, optionsExecutor.(*PkiInitOption).CacheCAOpt)
+
+	// cache CA option omitted
+	options.CacheCAOpt = false
+	optionsExecutor, _, _ = NewPkiInitOption(options)
+	assert.NotNil(optionsExecutor)
+	assert.Equal(false, optionsExecutor.(*PkiInitOption).CacheCAOpt)
+}
+
 func TestNewPkiInitOption_ImportAndGenerate(t *testing.T) {
 	assert := assert.New(t)
 
@@ -132,15 +151,114 @@ func TestNewPkiInitOption_CacheAndGenerateAndImport(t *testing.T) {
 	assert.NotNil(err)
 }
 
+func TestNewPkiInitOption_CacheCAAndGenerate(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		CacheCAOpt:  true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt:  true,
+		CacheCAOpt: true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		CacheOpt:   true,
+		CacheCAOpt: true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateAndImport(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   true,
+		CacheCAOpt:  true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		CacheOpt:    true,
+		CacheCAOpt:  true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndImportAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		ImportOpt:  true,
+		CacheOpt:   true,
+		CacheCAOpt: true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
+func TestNewPkiInitOption_CacheCAAndGenerateImportAndCache(t *testing.T) {
+	assert := assert.New(t)
+
+	options := PkiInitOption{
+		GenerateOpt: true,
+		ImportOpt:   true,
+		CacheOpt:    true,
+		CacheCAOpt:  true,
+	}
+	optionsExecutor, status, err := NewPkiInitOption(options)
+	assert.Empty(optionsExecutor)
+	assert.Equal(exitWithError.intValue(), status)
+	assert.NotNil(err)
+}
+
 func getMockArguments() []interface{} {
 	var ifc []interface{}
-
-	// for generate opt
-	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
-	// for import opt
-	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
-	// for cache opt
-	ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+	// use reflection to find out how many bool type of options in PkiInitOption struct
+	// and create a slice of mock argument interface instances
+	elm := reflect.ValueOf(&PkiInitOption{}).Elem()
+	for i := 0; i < elm.NumField(); i++ {
+		field := elm.Field(i)
+		switch field.Kind() {
+		case reflect.Bool:
+			ifc = append(ifc, mock.AnythingOfTypeArgument("func(*option.PkiInitOption) (option.exitCode, error)"))
+		}
+	}
 
 	return ifc
 }
