@@ -17,6 +17,8 @@ cmd/pkisetup/pkisetup
 cmd/vaultworker/edgex-vault-worker
 internal/pki/pkisetup/*.test
 internal/pki/pkisetup/testconfig/*.*
+internal/pkg/pkisetup/test*
+internal/pkg/vaultworker/*.log
 pkiinit/pkiinit
 pkiinit/pki-init
 pkisetup/pkisetup

@@ -32,10 +32,10 @@ WORKDIR $PKI_INIT_DIR
 
 # setup / install the executable
 COPY pkiinit/pki-init .
-COPY pkisetup/pkisetup .
+COPY cmd/pkisetup/pkisetup .
 
 # setup configuration json file for vault
-COPY pkisetup/pkisetup-vault.json .
+COPY configs/pkisetup-vault.json .
 
 # setup the entry point script
 # it uses `dumb-init` as the top-level process to reap any

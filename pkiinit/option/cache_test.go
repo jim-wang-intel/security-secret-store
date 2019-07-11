@@ -132,7 +132,7 @@ func setupCacheTest(t *testing.T) func(t *testing.T) {
 
 	pkiSetupFile := filepath.Join(curDir, pkiSetupExecutable)
 	if pkisetupLocal {
-		if _, err := copyFile(filepath.Join(curDir, "..", "..", "pkisetup", pkiSetupExecutable), pkiSetupFile); err != nil {
+		if _, err := copyFile(filepath.Join(curDir, "..", "..", "cmd", "pkisetup", pkiSetupExecutable), pkiSetupFile); err != nil {
 			t.Fatalf("cannot copy pkisetup binary for the test: %v", err)
 		}
 		os.Chmod(pkiSetupFile, 0777)
@@ -140,7 +140,7 @@ func setupCacheTest(t *testing.T) func(t *testing.T) {
 
 	jsonVaultFile := filepath.Join(curDir, pkiSetupVaultJSON)
 	if vaultJSONPkiSetupExist {
-		if _, err := copyFile(filepath.Join(curDir, "..", "..", "pkisetup", pkiSetupVaultJSON), jsonVaultFile); err != nil {
+		if _, err := copyFile(filepath.Join(curDir, "..", "..", "configs", pkiSetupVaultJSON), jsonVaultFile); err != nil {
 			t.Fatalf("cannot copy %s for the test: %v", pkiSetupVaultJSON, err)
 		}
 	}
