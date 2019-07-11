@@ -106,7 +106,3 @@ func importPkis() (statusCode exitCode, err error) {
 
 	return statusCode, err
 }
-
-func deploy(srcDir, destDir string) error {
-	return copyDir(srcDir, destDir)
-}

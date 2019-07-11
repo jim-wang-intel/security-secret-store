@@ -43,6 +43,11 @@ func copyFile(fileSrc, fileDest string) (int64, error) {
 	}
 	defer source.Close()
 
+	if _, err := os.Stat(fileDest); err == nil {
+		// if fileDest alrady exists, remove it first before create a new one
+		os.Remove(fileDest)
+	}
+
 	// now create a new file
 	dest, createErr := os.Create(fileDest)
 	if createErr != nil {
@@ -50,7 +55,13 @@ func copyFile(fileSrc, fileDest string) (int64, error) {
 	}
 	defer dest.Close()
 
-	return io.Copy(dest, source)
+	bytesWritten, copyErr := io.Copy(dest, source)
+	if copyErr != nil {
+		return zeroByte, copyErr
+	}
+	// make dest has the same file mode as the source
+	os.Chmod(fileDest, sourceFileSt.Mode())
+	return bytesWritten, nil
 }
 
 func createDirectoryIfNotExists(dirName string) (err error) {
@@ -117,4 +128,39 @@ func getPkiCacheDirEnv() string {
 		return defaultPkiCacheDir
 	}
 	return pkiCacheDir
+}
+
+func deploy(srcDir, destDir string) error {
+	return copyDir(srcDir, destDir)
+}
+
+func secureEraseFile(fileToErase string) error {
+	if err := zeroOutFile(fileToErase); err != nil {
+		return err
+	}
+	return os.Remove(fileToErase)
+}
+
+func zeroOutFile(fileToErase string) error {
+	// grant the file read-write permission first
+	os.Chmod(fileToErase, 0600)
+	fileHdl, err := os.OpenFile(fileToErase, os.O_RDWR, 0600)
+	defer fileHdl.Close()
+	if err != nil {
+		return err
+	}
+	fileInfo, err := fileHdl.Stat()
+	if err != nil {
+		return err
+	}
+
+	fileSize := fileInfo.Size()
+	zeroBytes := make([]byte, fileSize)
+	copy(zeroBytes[:], "0")
+
+	// fill the file with zero bytes
+	if _, err := fileHdl.Write(zeroBytes); err != nil {
+		return err
+	}
+	return nil
 }

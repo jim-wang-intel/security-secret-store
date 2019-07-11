@@ -137,7 +137,7 @@ func copyGeneratedForService(servicePath, pkiOutputDir string, config cert.X509C
 		return err
 	}
 
-	privKeyFileName := filepath.Join(servicePath, tlsSceretFileName)
+	privKeyFileName := filepath.Join(servicePath, tlsSecretFileName)
 	if filepath.Base(servicePath) == caServiceName {
 		if _, err := copyFile(filepath.Join(pkiOutputDir, config.GetCAPrivateKeyFileName()), privKeyFileName); err != nil {
 			return err

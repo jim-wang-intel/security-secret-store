@@ -27,6 +27,8 @@ type OptionsExecutor interface {
 type PkiInitOption struct {
 	GenerateOpt bool
 	ImportOpt   bool
+	CacheOpt    bool
+	CacheCAOpt  bool
 	executor    OptionsExecutor
 }
 
@@ -35,6 +37,15 @@ func NewPkiInitOption(opts PkiInitOption) (ex OptionsExecutor, statusCode int, e
 	// import option cannot be attempted with other modes
 	if opts.ImportOpt && opts.GenerateOpt {
 		return ex, exitWithError.intValue(), errors.New("Cannot attempt import option with other modes")
+	}
+	// cache option cannot used with -generate or -import or -cacheca
+	if opts.CacheOpt && (opts.GenerateOpt || opts.ImportOpt || opts.CacheCAOpt) {
+		return ex, exitWithError.intValue(), errors.New("Cannot attempt cache option with other modes")
+	}
+
+	// cache CA option cannot used with -generate or -import or -cache
+	if opts.CacheCAOpt && (opts.GenerateOpt || opts.ImportOpt || opts.CacheOpt) {
+		return ex, exitWithError.intValue(), errors.New("Cannot attempt cache CA option with other modes")
 	}
 	opts.executor = &opts
 
@@ -46,6 +57,8 @@ func (pkiInitOpt *PkiInitOption) ProcessOptions() (int, error) {
 	statusCode, err := pkiInitOpt.executor.executeOptions(
 		Generate(),
 		Import(),
+		Cache(),
+		CacheCA(),
 	)
 
 	return statusCode.intValue(), err
