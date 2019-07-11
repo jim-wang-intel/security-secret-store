@@ -33,7 +33,21 @@ func Generate() func(*PkiInitOption) (exitCode, error) {
 			return normal, nil
 		}
 
-		return generatePkis()
+		if statusCode, err := generatePkis(); err != nil {
+			return statusCode, err
+		}
+		generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
+		// Shred the CA private key before deploy
+		caPrivateKeyFile := filepath.Join(generatedDirPath, caServiceName, tlsSecretFileName)
+		if err := secureEraseFile(caPrivateKeyFile); err != nil {
+			return exitWithError, err
+		}
+
+		if err := deploy(generatedDirPath, pkiInitDeployDir); err != nil {
+			return exitWithError, err
+		}
+
+		return normal, nil
 	}
 }
 

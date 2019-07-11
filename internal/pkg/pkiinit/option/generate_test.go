@@ -47,6 +47,23 @@ func TestGenerate(t *testing.T) {
 	assert := assert.New(t)
 	assert.Equal(normal, exitCode)
 	assert.Nil(err)
+	generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
+	caPrivateKeyFile := filepath.Join(generatedDirPath, caServiceName, tlsSecretFileName)
+	fileExists := checkIfFileExists(caPrivateKeyFile)
+	assert.False(fileExists, "CA private key are not removed!")
+
+	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
+	assert.Nil(emptyErr)
+	assert.False(deployEmpty)
+
+	// check sentinel file is present when deploy is done
+	sentinel := filepath.Join(pkiInitDeployDir, caServiceName, pkiInitFilePerServiceComplete)
+	fileExists = checkIfFileExists(sentinel)
+	assert.True(fileExists, "sentinel file does not exist for CA service!")
+
+	sentinel = filepath.Join(pkiInitDeployDir, vaultServiceName, pkiInitFilePerServiceComplete)
+	fileExists = checkIfFileExists(sentinel)
+	assert.True(fileExists, "sentinel file does not exist for vault service!")
 }
 
 func TestGenerateWithPkiSetupMissing(t *testing.T) {
@@ -149,6 +166,13 @@ func setupGenerateTest(t *testing.T) func(t *testing.T) {
 	}
 	pkiInitGeneratedDir = filepath.Base(testGeneratedDir)
 
+	origDeployDir := pkiInitDeployDir
+	tempDir, tempDirErr := ioutil.TempDir(curDir, "deploytest")
+	if tempDirErr != nil {
+		t.Fatalf("cannot create temporary scratch directory for the test: %v", tempDirErr)
+	}
+	pkiInitDeployDir = tempDir
+
 	return func(t *testing.T) {
 		// cleanup
 		os.Remove(pkiSetupFile)
@@ -156,8 +180,10 @@ func setupGenerateTest(t *testing.T) func(t *testing.T) {
 		os.Setenv(envXdgRuntimeDir, origEnvXdgRuntimeDir)
 		os.RemoveAll(testScratchDir)
 		os.RemoveAll(testGeneratedDir)
+		os.RemoveAll(pkiInitDeployDir)
 		pkiInitScratchDir = origScratchDir
 		pkiInitGeneratedDir = origGeneratedDir
+		pkiInitDeployDir = origDeployDir
 		pkisetupLocal = true
 		vaultJSONPkiSetupExist = true
 	}

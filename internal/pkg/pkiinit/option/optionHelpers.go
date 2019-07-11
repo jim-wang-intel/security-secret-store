@@ -21,7 +21,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 func copyFile(fileSrc, fileDest string) (int64, error) {
@@ -131,7 +134,10 @@ func getPkiCacheDirEnv() string {
 }
 
 func deploy(srcDir, destDir string) error {
-	return copyDir(srcDir, destDir)
+	if err := copyDir(srcDir, destDir); err != nil {
+		return err
+	}
+	return markComplete(destDir)
 }
 
 func secureEraseFile(fileToErase string) error {
@@ -162,5 +168,49 @@ func zeroOutFile(fileToErase string) error {
 	if _, err := fileHdl.Write(zeroBytes); err != nil {
 		return err
 	}
+	return nil
+}
+
+func checkIfFileExists(fileName string) bool {
+	fileInfo, statErr := os.Stat(fileName)
+	if os.IsNotExist(statErr) {
+		return false
+	}
+	return !fileInfo.IsDir()
+}
+
+func writeSentinel(sentinelFilename string) error {
+	timestamp := []byte(strconv.FormatInt(time.Now().Unix(), 10))
+	return ioutil.WriteFile(sentinelFilename, timestamp, 0400)
+}
+
+// markComplete creates sentinel files of all services to signal pki-init deploy is done
+func markComplete(dirPath string) error {
+	// recursively walk through all sub-directories until reach the leaf node
+	// to write the sentinel files
+	fileDescs, readErr := ioutil.ReadDir(dirPath)
+	if readErr != nil {
+		return readErr
+	}
+
+	for _, fileDesc := range fileDescs {
+		aFilePath := filepath.Join(dirPath, fileDesc.Name())
+
+		if fileDesc.IsDir() {
+			if err := markComplete(aFilePath); err != nil {
+				return err
+			}
+		} else {
+			// now we are at the leaf node, write sentinel file if not yet
+			deployPathDir := path.Dir(aFilePath)
+			sentinel := filepath.Join(deployPathDir, pkiInitFilePerServiceComplete)
+			if !checkIfFileExists(sentinel) {
+				if err := writeSentinel(sentinel); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
 }
