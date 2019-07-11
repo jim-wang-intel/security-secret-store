@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/edgexfoundry/security-secret-store/pkiinit/cert"
+	cert "github.com/edgexfoundry/security-secret-store/internal/pkg/pkiinit/cert"
 )
 
 // Generate option....

@@ -31,7 +31,7 @@ RUN mkdir -p $PKI_INIT_DIR
 WORKDIR $PKI_INIT_DIR
 
 # setup / install the executable
-COPY pkiinit/pki-init .
+COPY cmd/pkiinit/pki-init .
 COPY cmd/pkisetup/pkisetup .
 
 # setup configuration json file for vault
@@ -40,7 +40,7 @@ COPY configs/pkisetup-vault.json .
 # setup the entry point script
 # it uses `dumb-init` as the top-level process to reap any
 # zombie processes created by sub-processes
-COPY pkiinit/docker-entrypoint.sh /usr/local/bin/
+COPY internal/pkg/pkiinit/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN ln -s usr/local/bin/docker-entrypoint.sh /  # backwards compatability
 

@@ -21,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/edgexfoundry/security-secret-store/pkiinit/option"
+	option "github.com/edgexfoundry/security-secret-store/internal/pkg/pkiinit/option"
 )
 
 type exit interface {

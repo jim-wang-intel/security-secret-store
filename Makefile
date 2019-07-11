@@ -17,12 +17,12 @@ prepare:
 clean:
 	cd cmd/vaultworker && rm -f $(VAULTWORKER)
 	cd cmd/pkisetup && rm -f $(PKISETUP)
-	cd pkiinit && rm -f $(PKIINIT)
+	cd cmd/pkiinit && rm -f $(PKIINIT)
 
 build: build_pki_init build_pki_setup build_worker
 
 build_pki_init:
-	cd pkiinit && $(GO) build -a -o $(PKIINIT) .
+	cd cmd/pkiinit && $(GO) build -a -o $(PKIINIT) .
 
 build_pki_setup:
 	cd cmd/pkisetup && $(GO) build -a -ldflags="-s -w" -o $(PKISETUP) .
