@@ -40,6 +40,7 @@ func isCacheNoOp(pkiInitOption *PkiInitOption) bool {
 func cachePkis(cacheca bool) (statusCode exitCode, err error) {
 	// generate a new one if pkicache dir is empty
 	pkiCacheDir := getPkiCacheDirEnv()
+	cachedCAPrivateKeyFile := filepath.Join(pkiCacheDir, caServiceName, tlsSecretFileName)
 	if empty, err := isDirEmpty(pkiCacheDir); err != nil {
 		return exitWithError, err
 	} else if empty {
@@ -61,6 +62,18 @@ func cachePkis(cacheca bool) (statusCode exitCode, err error) {
 
 		if err = doCache(generatedDirPath); err != nil {
 			return exitWithError, err
+		}
+	} else if cacheca {
+		// cache dir is not empty: output error message if CA private key is missing
+		// when cacheca is given
+		if !checkIfFileExists(cachedCAPrivateKeyFile) {
+			return exitWithError, errCacheNotChangeAfter
+		}
+	} else {
+		// cache dir is not empty: output error message if CA private key is present
+		// when cache is given
+		if checkIfFileExists(cachedCAPrivateKeyFile) {
+			return exitWithError, errCacheNotChangeAfter
 		}
 	}
 

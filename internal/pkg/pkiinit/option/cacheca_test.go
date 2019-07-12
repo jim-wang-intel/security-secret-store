@@ -60,6 +60,62 @@ func TestCacheCAOn(t *testing.T) {
 	assert.False(deployEmpty)
 }
 
+func TestCacheCACannotChangeError(t *testing.T) {
+	// this test case is for calling cacheca after
+	// a cache was called sucessfully previously
+	pkisetupLocal = true
+	vaultJSONPkiSetupExist = true
+	tearDown := setupCacheCATest(t)
+	defer tearDown(t)
+
+	options := PkiInitOption{
+		CacheOpt: true,
+	}
+	cacheOn, _, _ := NewPkiInitOption(options)
+	cacheOn.(*PkiInitOption).executor = testExecutor
+
+	var exitStatus exitCode
+	var err error
+	f := Cache()
+	exitStatus, err = f(cacheOn.(*PkiInitOption))
+
+	cacheEmpty, emptyErr := isDirEmpty(getPkiCacheDirEnv())
+
+	assert := assert.New(t)
+	assert.Equal(normal, exitStatus)
+	assert.Nil(err)
+	assert.Nil(emptyErr)
+	assert.False(cacheEmpty)
+
+	generatedDirPath := filepath.Join(os.Getenv(envXdgRuntimeDir), pkiInitGeneratedDir)
+	caPrivateKeyFile := filepath.Join(generatedDirPath, caServiceName, tlsSecretFileName)
+	if _, checkErr := os.Stat(caPrivateKeyFile); checkErr == nil {
+		// means found the file caPrivateKeyFile
+		assert.Fail("CA private key are not removed!")
+	}
+
+	deployEmpty, emptyErr := isDirEmpty(pkiInitDeployDir)
+	assert.Nil(emptyErr)
+	assert.False(deployEmpty)
+
+	// now we do the cacheca and expect to get error
+	options = PkiInitOption{
+		CacheCAOpt: true,
+	}
+	cacheCAOn, _, _ := NewPkiInitOption(options)
+	cacheCAOn.(*PkiInitOption).executor = testExecutor
+
+	f = CacheCA()
+	exitStatus, err = f(cacheCAOn.(*PkiInitOption))
+
+	cacheEmpty, emptyErr = isDirEmpty(getPkiCacheDirEnv())
+
+	assert.Equal(exitWithError, exitStatus)
+	assert.NotNil(err)
+	assert.Nil(emptyErr)
+	assert.False(cacheEmpty)
+}
+
 func TestCacheCAOff(t *testing.T) {
 	pkisetupLocal = true
 	vaultJSONPkiSetupExist = true

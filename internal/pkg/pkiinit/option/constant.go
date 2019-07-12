@@ -15,7 +15,10 @@
 //
 package option
 
-import "path/filepath"
+import (
+	"errors"
+	"path/filepath"
+)
 
 const (
 	pkiSetupExecutable            = "pkisetup"
@@ -39,3 +42,4 @@ const (
 var pkiInitScratchDir = filepath.Join(pkiInitBaseDir, "scratch")
 var pkiInitGeneratedDir = filepath.Join(pkiInitBaseDir, "generated")
 var pkiInitDeployDir = filepath.Join(tmpfsRunDir, "edgex", "secrets")
+var errCacheNotChangeAfter = errors.New("PKI cache cannot be changed after it was cached previously")
