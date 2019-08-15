@@ -8,7 +8,7 @@ NAME
 SYNOPSIS
 ========
 
-| **security-secrets-setup** \[**-generate**|**-cache**|**-import**] \[**-scratchdir** _scratch-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_]
+| **security-secrets-setup** \[**-scratchdir** _scratch-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_] **-generate**|**-cache**|**-import** 
 | **security-secrets-setup** \[**-h**|**--help**]
 
 DESCRIPTION
@@ -71,8 +71,8 @@ FILES
 ```json
 {
     "create_new_rootca": "true|false",
-    "working_dir": "./config", // obsolete - replaced by deploydir
-    "pki_setup_dir": "pki", // obsolete - replaced by deploydir
+    "working_dir": "./config", // obsolete
+    "pki_setup_dir": "pki",    // obsolete
     "dump_config": "true",
     "key_scheme": {
         "dump_keys": "false",
@@ -99,7 +99,7 @@ FILES
 }
 ```
 
-The utility hard-codes the names of the configuration file and always processes edgex-vault.json first and edgex-kong.json second.
+The utility hard-codes the names of the configuration file and always processes edgex-vault.json first and edgex-kong.json second.  (This is done for now in order to meet the October Fuji deadline.)
 
 ENVIRONMENT
 ===========
@@ -112,3 +112,9 @@ NOTES
 =====
 
 As security-secrets-setup is a helper utility to ensure that a PKI is created on first launch, it is intended that security-secrets-setup is always invoked with the same operation flag, such as `-generate` or `-cache` or `-import`.   Changing from `-cache` to `-generate` will cause the cache to be ignored when deploying a PKI and changing it back will cause a reversion to a stale CA.  Changing from `-cache` to `-import` mode of operation is not noticeable by the tool--the PKI that is in the cache will be the one deployed.  To force regeneration of the PKI cache after the first launch, the PKI cache must be manually cleaned: the easiest way in Docker would be to delete the Docker volume holding the cached PKI.
+
+Legacy-compatible deployment for Docker would be:
+
+```security-secrets-setup -cache -cachedir /vault/config/pki -deploydir /run/edgex/secrets/pki```
+
+The PKI would be generated at the default scratchdir, then cached in the docker volume where it used to be cached, with a slightly different directory structure, and then deployed to a new location.  A modified Vault container would look for the new PKI at the deploydir location.
