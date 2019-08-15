@@ -8,13 +8,20 @@ NAME
 SYNOPSIS
 ========
 
-| **security-secrets-setup** \[**-generate**|**-cache**|**-import**] \[**-scratchdir** _scratch-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_]
+| **security-secrets-setup** \[**-scratchdir** _scratch-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_] \[**-generate** cert-parameters.json[, ...] | **-cache** cert-parameters.json[, ...] | **-import** ]
 | **security-secrets-setup** \[**-h**|**--help**]
 
 DESCRIPTION
 ===========
 
 The Vault secret management component of EdgeX Foundry requires TLS encryption of secrets over the wire via a pre-created PKI.  security-secrets-setup is responsible for creating a certificate authority and any needed TLS leaf certificates in order to secure the EdgeX security services.  security-secrets-setup supports several modes of operation as defined in the OPTIONS section.
+
+The tool processes a list of `.json` files delimited by a comma with no spaces (entire list should be quoted in order to preserve embedded spaces), passed on the command line to determine the following:
+
+* Subject and issuer names to be used in the generated certificates.
+* Key sizes to be used in generated certificates.
+* Whether a given certificate has attributes that make it a root CA, intermediate CA, or leaf TLS certificate. (The tool currently only supports generating leaf certificates that are direct descendants of the root CA.)
+* The CA is created first, and additional certificates are created in an undetermined order after that.  It is an error to specify the creation of more than one root CA, and by convention the CA should be specified in "ca.json".
 
 As the PKI is security-sensitive, this tool takes a number of precautions to safeguard the PKI:
 * The PKI can be deployed to transient storage to address potential attacks to the PKI at-rest.
@@ -28,17 +35,13 @@ OPTIONS
 
 :   Prints brief usage information.
 
--config
-
-:   UNSUPPORTED.  Legacy option from prior version of security-secrets-setup. The new tool deploys the entire PKI in one step; thus certificate-at-a-time deployment is not supported.
-
 -generate
 
-:   Causes a PKI to be generated afresh every time and deployed. Typically, this will be whenever the framework is started.
+:   Causes a PKI to be generated afresh every time and deployed. Typically, this will be whenever the framework is started.  Takes a comma-separated list of json files specifying the certificates to be generated.
 
 -cache
 
-:   Causes a PKI to be generated exactly once and then copied to a designated cache location for future use.  The PKI is then deployed from the cached location.
+:   Causes a PKI to be generated exactly once and then copied to a designated cache location for future use.  The PKI is then deployed from the cached location. Takes a comma-separated list of json files specifying the certificates to be generated.
 
 -import
 
@@ -63,43 +66,33 @@ FILES
 
 :   Target deployment folder for the PKI secrets. Populated with subdirectories named after EdgeX services (e.g. `edgex-vault`) and contains typically two files: `server.crt` for a PEM-encoded end-entity TLS certificate and the corresponding private key in `server.key` as well as a sentinel value `.security-secrets-setup.complete`.
 
-*edgex-vault.json*
-*edgex-kong.json*
+*cert-parameters.json*
 
-:   Configuration files for certificate parameters.  The basename of this file creates a corresponding directory under _deploydir_.  For example, `edgex-vault.json` would create assets under `/run/edgex/secrets/pki/edgex-vault/`.  This file conforms to the following schema:
+:   Configuration file for certificate parameters.  The basename of this file creates a corresponding directory under _deploydir_.  For example, `edgex-vault.json` would create assets under `/run/edgex/secrets/pki/edgex-vault/`.  This file conforms to the following schema:
 
 ```json
 {
-    "create_new_rootca": "true|false",
-    "working_dir": "./config", // obsolete - replaced by deploydir
-    "pki_setup_dir": "pki", // obsolete - replaced by deploydir
-    "dump_config": "true",
+    "dump_config": boolean,
     "key_scheme": {
-        "dump_keys": "false",
-        "rsa": "false",
-        "rsa_key_size": "4096",
-        "ec": "true",
-        "ec_curve": "384"
+        "dump_keys": boolean,
+        "rsa": boolean,
+        "rsa_key_size": integer,
+        "ec": boolean,
+        "ec_curve": [ "" | "384" ]
     },
-    "x509_root_ca_parameters": {
-        "ca_name": "EdgeXFoundryCA",
-        "ca_c": "US",
-        "ca_st": "CA",
-        "ca_l": "San Francisco",
-        "ca_o": "EdgeXFoundry"
-    },
-    "x509_tls_server_parameters": {
-        "tls_host": "edgex-vault|edgex-kong",
-        "tls_domain": "local",
-        "tls_c": "US",
-        "tls_st": "CA",
-        "tls_l": "San Francisco",
-        "tls_o": "Kong"
+    "cert_level": [ "ca" | "ca-intermediate" | "ca-leaf" ],
+    "subject": {
+        "cn": string - service-name (required),
+        "domain": string - domain (optional; usually "local"),
+        "o": string - organization (optional),
+        "l": string - locality/city (optional),
+        "st": string - state (optional),
+        "c": string - country code, 2-character (optional)
     }
 }
 ```
 
-The utility hard-codes the names of the configuration file and always processes edgex-vault.json first and edgex-kong.json second.
+The issuer field of the certificate is the subject of the parent's certificate.
 
 ENVIRONMENT
 ===========
