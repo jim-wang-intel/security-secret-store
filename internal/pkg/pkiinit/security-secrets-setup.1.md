@@ -8,7 +8,7 @@ NAME
 SYNOPSIS
 ========
 
-| **security-secrets-setup** \[**-scratchdir** _scratch-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_] **-generate**|**-cache**|**-import** 
+| **security-secrets-setup** \[**-workdir** _work-dir_] \[**-deploydir** _deploy-dir_] \[**-cachedir** _cache-dir_] **-generate**|**-cache**|**-import**|**-config** params.json
 | **security-secrets-setup** \[**-h**|**--help**]
 
 DESCRIPTION
@@ -24,13 +24,11 @@ As the PKI is security-sensitive, this tool takes a number of precautions to saf
 OPTIONS
 =====
 
--h, --help
+Modes of operation
+-----
+-config *params.json*
 
-:   Prints brief usage information.
-
--config
-
-:   UNSUPPORTED.  Legacy option from prior version of security-secrets-setup. The new tool deploys the entire PKI in one step; thus certificate-at-a-time deployment is not supported.
+:   Legacy option from prior version of security-secrets-setup. Deploys PKI using existing behavior in Edinburgh release.
 
 -generate
 
@@ -44,17 +42,23 @@ OPTIONS
 
 :   This option is similar to `-cache` in that it deploys a PKI from _cachedir_ to _deploydir_, but it forces an error if _cachedir_ is empty instead of triggering PKI generation.  This enables usage models for deploying a pre-populated PKI such as a Kong certificate signed by an external certificate authority or TLS keys signed by an offline enterprise certificate authority.
 
--scratchdir
+Optional switches
+-----
+-h, --help
 
-:   A scratch area (preferably on a ramdisk) to place working files during certificate generation.  If not supplied, temporary files will be generated to a subdirectory (`/edgex/security-secrets-setup`) of `$XDG_RUNTIME_DIR`, or  underneath `/tmp` if `$XDG_RUNTIME_DIR` is undefined.
+:   Prints brief usage information.
+
+-workdir
+
+:   A work area (preferably on a ramdisk) to place working files during certificate generation.  If not supplied, temporary files will be generated to a subdirectory (`/edgex/security-secrets-setup`) of `$XDG_RUNTIME_DIR`, or  underneath `/tmp` if `$XDG_RUNTIME_DIR` is undefined.  Not used in legacy (`-config`) mode.
 
 -deploydir
 
-:   Points to the base directory for the final deployment location of the PKI.  If not specified, defaults to `/run/edgex/secrets/pki/` where each `_service-name_.json` processed causes assets to be placed in `/run/edgex/secrets/pki/_service-name_`.
+:   Points to the base directory for the final deployment location of the PKI.  If not specified, defaults to `/run/edgex/secrets/pki/` where each `_service-name_.json` processed causes assets to be placed in `/run/edgex/secrets/pki/_service-name_`. Not used in legacy (`-config`) mode.
 
 -cachedir
 
-:   Points to a base directory to hold the cached PKI, identical in structure to that created in _deploydir_.  Defaults to `/etc/edgex/pki` if not specified.  The PKI is deployed from here when the tool is run in `-cache` or `-import` modes.
+:   Points to a base directory to hold the cached PKI, identical in structure to that created in _deploydir_.  Defaults to `/etc/edgex/pki` if not specified.  The PKI is deployed from here when the tool is run in `-cache` or `-import` modes. Not used in legacy (`-config`) mode.
 
 FILES
 =====
@@ -71,8 +75,8 @@ FILES
 ```json
 {
     "create_new_rootca": "true|false",
-    "working_dir": "./config", // obsolete
-    "pki_setup_dir": "pki",    // obsolete
+    "working_dir": "./config",
+    "pki_setup_dir": "pki",
     "dump_config": "true",
     "key_scheme": {
         "dump_keys": "false",
@@ -99,22 +103,31 @@ FILES
 }
 ```
 
-The utility hard-codes the names of the configuration file and always processes edgex-vault.json first and edgex-kong.json second.  (This is done for now in order to meet the October Fuji deadline.)
+In `-generate` or `-cache` mode the utility hard-codes the names of the configuration file and always processes `edgex-vault.json` first and `edgex-kong.json` second.  (This is done for now in order to meet the October Fuji deadline.)
+
+*configuration.toml*
+
+:   Configuration file for default options, which can be overridden on the command line.  This file conforms to the following schema:
+
+```ini
+[SecretsSetup]
+WorkDir = "/path/to/temp/files"
+DeployDir = "/path/to/deployed/pki"
+CacheDir = "/path/to/cached-or-importing/pki"
+Command = "-generate | -config files | ..."
+```
+
 
 ENVIRONMENT
 ===========
 
 **XDG_RUNTIME_DIR**
 
-:  Used as default value for _scratchdir_ if not otherwise specified.
+:  Used as default value for _workdir_ if not otherwise specified.
 
 NOTES
 =====
 
-As security-secrets-setup is a helper utility to ensure that a PKI is created on first launch, it is intended that security-secrets-setup is always invoked with the same operation flag, such as `-generate` or `-cache` or `-import`.   Changing from `-cache` to `-generate` will cause the cache to be ignored when deploying a PKI and changing it back will cause a reversion to a stale CA.  Changing from `-cache` to `-import` mode of operation is not noticeable by the tool--the PKI that is in the cache will be the one deployed.  To force regeneration of the PKI cache after the first launch, the PKI cache must be manually cleaned: the easiest way in Docker would be to delete the Docker volume holding the cached PKI.
+For backward compatible behavior, use the `-config` option.
 
-Legacy-compatible deployment for Docker would be:
-
-```security-secrets-setup -cache -cachedir /vault/config/pki -deploydir /run/edgex/secrets/pki```
-
-The PKI would be generated at the default scratchdir, then cached in the docker volume where it used to be cached, with a slightly different directory structure, and then deployed to a new location.  A modified Vault container would look for the new PKI at the deploydir location.
+New behavior: As security-secrets-setup is a helper utility to ensure that a PKI is created on first launch, it is intended that security-secrets-setup is always invoked with the same operation flag, such as `-generate` or `-cache` or `-import`.   Changing from `-cache` to `-generate` will cause the cache to be ignored when deploying a PKI and changing it back will cause a reversion to a stale CA.  Changing from `-cache` to `-import` mode of operation is not noticeable by the tool--the PKI that is in the cache will be the one deployed.  To force regeneration of the PKI cache after the first launch, the PKI cache must be manually cleaned: the easiest way in Docker would be to delete the Docker volume holding the cached PKI.
